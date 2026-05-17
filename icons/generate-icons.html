@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Generate Icons — Markdown Browser</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #1A1816; color: #F5F0EA; padding: 40px; }
+    h2 { margin-bottom: 6px; font-size: 18px; }
+    p  { color: #8C8680; font-size: 13px; margin-bottom: 28px; }
+    code { background: #2D2925; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+    .grid { display: flex; gap: 32px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 32px; }
+    .icon-wrap { text-align: center; }
+    .icon-wrap canvas { display: block; image-rendering: pixelated; }
+    .icon-wrap span { display: block; margin-top: 8px; font-size: 12px; color: #8C8680; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 9px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500; }
+    .btn-single { background: #2D2925; color: #F5F0EA; border: 1px solid #3A3530; }
+    .btn-single:hover { background: #3A3530; }
+    .btn-all { background: #D4622A; color: #fff; }
+    .btn-all:hover { background: #E07848; }
+  </style>
+</head>
+<body>
+  <h2>Markdown Browser — Icon Generator</h2>
+  <p>Open in Chrome, click <strong>Download All</strong>, then drop the 4 PNGs into the <code>icons/</code> folder.</p>
+
+  <div class="grid" id="grid"></div>
+  <div class="actions" id="actions"></div>
+
+  <script>
+    const SIZES = [16, 32, 48, 128];
+
+    // Anthropic palette
+    const DARK      = '#1C1917';   // background
+    const FOLDER    = '#D4622A';   // coral — folder body
+    const FOLDER_SH = '#A84A1A';   // darker coral — shadow / depth
+    const FOLDER_LT = '#E8845A';   // lighter coral — top highlight
+    const TAB       = '#E07040';   // slightly lighter tab
+    const LINE      = '#FFFFFF';   // lines on folder
+    const LINE_A    = 0.85;        // line opacity
+
+    function drawIcon(size) {
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d');
+
+      const s = size;
+
+      // ── Transparent background (looks clean on toolbar) ──
+      ctx.clearRect(0, 0, s, s);
+
+      if (s <= 20) {
+        drawTiny(ctx, s);
+      } else {
+        drawFolder(ctx, s);
+      }
+
+      return c;
+    }
+
+    function drawFolder(ctx, s) {
+      // Layout proportions
+      const pad   = s * 0.06;
+      const bx    = pad;                        // body left
+      const bw    = s - pad * 2;               // body width
+      const tabH  = s * 0.16;                  // tab height
+      const tabW  = bw * 0.42;                 // tab width
+      const bodyY = pad + tabH * 0.72;         // body top (overlaps tab bottom)
+      const bodyH = s - bodyY - pad * 1.2;     // body height
+      const br    = Math.max(2, s * 0.05);     // corner radius
+
+      // ── Drop shadow ──
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur  = s * 0.08;
+      ctx.shadowOffsetX = s * 0.025;
+      ctx.shadowOffsetY = s * 0.04;
+
+      // ── Tab ──
+      const tabX = bx;
+      const tabR = Math.max(2, s * 0.06);
+      ctx.beginPath();
+      ctx.moveTo(tabX + tabR, pad);
+      ctx.lineTo(tabX + tabW - tabR, pad);
+      ctx.quadraticCurveTo(tabX + tabW, pad, tabX + tabW, pad + tabR);
+      ctx.lineTo(tabX + tabW, bodyY);
+      ctx.lineTo(tabX, bodyY);
+      ctx.lineTo(tabX, pad + tabR);
+      ctx.quadraticCurveTo(tabX, pad, tabX + tabR, pad);
+      ctx.closePath();
+      ctx.fillStyle = TAB;
+      ctx.fill();
+
+      // ── Folder body ──
+      roundRect(ctx, bx, bodyY, bw, bodyH, br);
+      ctx.fillStyle = FOLDER;
+      ctx.fill();
+      ctx.restore();
+
+      // ── Top edge highlight (gives it a slight 3D retro look) ──
+      ctx.save();
+      ctx.beginPath();
+      roundRect(ctx, bx, bodyY, bw, bodyH * 0.08, 0);
+      ctx.fillStyle = FOLDER_LT;
+      ctx.globalAlpha = 0.4;
+      ctx.fill();
+      ctx.restore();
+
+      // ── Bottom shadow strip ──
+      ctx.save();
+      ctx.beginPath();
+      const shadowH = bodyH * 0.12;
+      ctx.rect(bx, bodyY + bodyH - shadowH, bw, shadowH);
+      // clip to rounded bottom
+      ctx.fillStyle = FOLDER_SH;
+      ctx.globalAlpha = 0.35;
+      ctx.fill();
+      ctx.restore();
+
+      // ── Markdown lines on the folder ──
+      if (s >= 48) {
+        drawLines(ctx, s, bx, bodyY, bw, bodyH, 3);
+      } else {
+        drawLines(ctx, s, bx, bodyY, bw, bodyH, 2);
+      }
+    }
+
+    function drawLines(ctx, s, bx, bodyY, bw, bodyH, count) {
+      const lx     = bx + bw * 0.14;           // line left margin
+      const lRight = bx + bw * 0.86;           // line right edge (full width)
+      const lh     = Math.max(1.2, s * 0.055); // line thickness
+      const gap    = bodyH / (count + 1.8);    // vertical spacing
+
+      const widths = [1.0, 0.72, 0.50];        // relative widths (like # ## ###)
+
+      ctx.save();
+      ctx.globalAlpha = LINE_A;
+      ctx.fillStyle = LINE;
+      ctx.lineCap = 'round';
+
+      for (let i = 0; i < count; i++) {
+        const ly = bodyY + gap * (i + 1.1);
+        const lw = (lRight - lx) * widths[i];
+        const r  = lh / 2;
+
+        // Pill-shaped line (rounded ends — feels retro / clean)
+        ctx.beginPath();
+        ctx.arc(lx + r,      ly, r, Math.PI / 2, -Math.PI / 2, true);
+        ctx.arc(lx + lw - r, ly, r, -Math.PI / 2, Math.PI / 2, true);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTiny(ctx, s) {
+      // 16px: simple flat folder silhouette
+      const pad = 1;
+      const bx = pad, bw = s - pad * 2;
+      const tabH = Math.round(s * 0.22);
+      const tabW = Math.round(bw * 0.45);
+      const bodyY = pad + tabH - 1;
+      const bodyH = s - bodyY - pad;
+
+      ctx.fillStyle = TAB;
+      ctx.fillRect(bx, pad, tabW, tabH);
+
+      ctx.fillStyle = FOLDER;
+      ctx.fillRect(bx, bodyY, bw, bodyH);
+
+      // one white line
+      const ly = bodyY + bodyH * 0.45;
+      ctx.fillStyle = LINE;
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(bx + 2, ly, bw * 0.7, Math.max(1, s * 0.07));
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    // ── Render ─────────────────────────────────────────────────
+    const grid    = document.getElementById('grid');
+    const actions = document.getElementById('actions');
+
+    // Show at 3× for small sizes so they're visible in the preview
+    const PREVIEW_SCALE = { 16: 6, 32: 4, 48: 3, 128: 1 };
+
+    for (const size of SIZES) {
+      const canvas  = drawIcon(size);
+      const scale   = PREVIEW_SCALE[size] || 1;
+      const preview = document.createElement('canvas');
+      preview.width  = size * scale;
+      preview.height = size * scale;
+      preview.style.borderRadius = '6px';
+      preview.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
+      const pCtx = preview.getContext('2d');
+      pCtx.imageSmoothingEnabled = false;
+      pCtx.drawImage(canvas, 0, 0, size * scale, size * scale);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'icon-wrap';
+      wrap.appendChild(preview);
+      const label = document.createElement('span');
+      label.textContent = `${size} × ${size}  (${scale}× preview)`;
+      wrap.appendChild(label);
+      grid.appendChild(wrap);
+
+      const btn = document.createElement('button');
+      btn.className   = 'btn-single';
+      btn.textContent = size + 'px';
+      btn.addEventListener('click', () => dl(canvas, `icon${size}.png`));
+      actions.appendChild(btn);
+    }
+
+    const btnAll = document.createElement('button');
+    btnAll.className   = 'btn-all';
+    btnAll.textContent = '⬇  Download All (16 · 32 · 48 · 128)';
+    btnAll.addEventListener('click', () => SIZES.forEach(s => dl(drawIcon(s), `icon${s}.png`)));
+    actions.appendChild(btnAll);
+
+    function dl(canvas, filename) {
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href     = canvas.toDataURL('image/png');
+      a.click();
+    }
+  </script>
+</body>
+</html>

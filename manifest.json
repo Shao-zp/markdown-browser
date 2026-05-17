@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Markdown Browser",
+  "version": "1.0.0",
+  "description": "Read and organize local markdown files with sidebar navigation, full-text search, and hot reload.",
+  "permissions": ["storage", "tabs"],
+  "action": {
+    "default_title": "Markdown Browser",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

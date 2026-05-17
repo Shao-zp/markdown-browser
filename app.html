@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Browser</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Header -->
+    <header id="header">
+      <div id="header-left">
+        <div id="app-logo">Markdown<span>Browser</span></div>
+        <div id="folder-breadcrumb" class="hidden">
+          <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+            <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          </svg>
+          <span id="folder-name">—</span>
+        </div>
+      </div>
+
+      <div id="header-center"></div>
+
+      <div id="header-right">
+        <button id="btn-search" class="btn-icon" title="Quick search (⌘K)">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+            <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <kbd>⌘K</kbd>
+        </button>
+        <button id="btn-theme" class="btn-icon" title="Toggle light / dark mode">
+          <svg id="icon-moon" width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12zM2 7.5a5.5 5.5 0 015.5-5.5c-.41.9-.65 1.93-.65 3a6.35 6.35 0 006.35 6.35c-.9.41-1.93.65-3 .65A5.5 5.5 0 012 7.5z" fill="currentColor"/>
+          </svg>
+          <svg id="icon-sun" width="15" height="15" viewBox="0 0 15 15" fill="none" style="display:none">
+            <circle cx="7.5" cy="7.5" r="2.5" fill="currentColor"/>
+            <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.05 3.05l1.06 1.06M10.9 10.9l1.06 1.06M3.05 11.95l1.06-1.06M10.9 4.1l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button id="btn-reload-toggle" class="btn-icon" title="Toggle hot reload">
+          <span id="reload-dot" class="dot dot-off"></span>
+          Live
+        </button>
+        <button id="btn-settings" class="btn-icon" title="Settings">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M5 1h5v2.5l1.5 1 2-1 1.5 2.6-1.8 1.3v2.2l1.8 1.3L13.5 13l-2-1-1.5 1V15H5v-2.5l-1.5-1-2 1L0 9.9l1.8-1.3V6.4L0 5.1 1.5 2.5l2 1L5 2.5V1z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
+            <circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main content area -->
+    <div id="main">
+
+      <!-- Sidebar -->
+      <aside id="sidebar">
+        <div id="sidebar-tabs">
+          <button class="sidebar-tab active" data-tab="files">
+            <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+              <path d="M3 2.5h9M3 5.5h9M3 8.5h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Files
+          </button>
+          <button class="sidebar-tab" data-tab="toc">
+            <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+              <path d="M2 3h11M2 7h8M2 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Contents
+          </button>
+          <button class="sidebar-tab" data-tab="recent">
+            <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+              <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M7.5 4.5v3.25l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            Recent
+          </button>
+        </div>
+
+        <!-- Files tab -->
+        <div id="panel-files" class="sidebar-panel active">
+          <div class="sidebar-filter">
+            <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+              <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+              <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <input type="text" id="filter-input" placeholder="Filter files…" autocomplete="off" spellcheck="false">
+          </div>
+          <div id="file-tree">
+            <div id="empty-state" class="empty-state">
+              <svg width="36" height="36" viewBox="0 0 15 15" fill="none" style="opacity:0.35">
+                <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1" fill="none"/>
+              </svg>
+              <p>No folder open yet</p>
+              <button id="btn-open" class="btn-open-sidebar">
+                <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+                  <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+                </svg>
+                Open Folder
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOC tab -->
+        <div id="panel-toc" class="sidebar-panel">
+          <nav id="toc">
+            <div class="empty-state">
+              <p>Open a file to see its contents</p>
+            </div>
+          </nav>
+        </div>
+
+        <!-- Recent tab -->
+        <div id="panel-recent" class="sidebar-panel">
+          <div id="recent-list">
+            <div class="empty-state">
+              <p>No recently opened files</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Resize handle -->
+      <div id="resize-handle" title="Drag to resize"></div>
+
+      <!-- Viewer -->
+      <main id="viewer">
+        <!-- Welcome screen -->
+        <div id="welcome" class="visible">
+          <div class="welcome-inner">
+
+            <!-- Hero -->
+            <div class="welcome-hero">
+              <div class="welcome-logo">
+                <svg width="48" height="48" viewBox="0 0 52 52" fill="none">
+                  <rect width="52" height="52" rx="12" fill="#D4622A" fill-opacity="0.14"/>
+                  <path d="M13 16h26M13 24h20M13 32h16M13 40h22" stroke="#D4622A" stroke-width="2.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <h1>Markdown<span>Browser</span></h1>
+                <p class="welcome-tagline">A local markdown reader — fast, private, offline.</p>
+              </div>
+            </div>
+
+            <div class="welcome-divider"></div>
+
+            <!-- About -->
+            <div class="welcome-section">
+              <h2>About</h2>
+              <p>Markdown Browser lets you read, browse, and search your local <code>.md</code> files directly in Chrome — no uploads, no cloud, no internet required. Your files stay on your machine.</p>
+              <p>Built with the <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" target="_blank">File System Access API</a> so Chrome reads your folder directly with your permission.</p>
+            </div>
+
+            <!-- How to use -->
+            <div class="welcome-section">
+              <h2>How to use</h2>
+              <div class="welcome-steps">
+                <div class="welcome-step">
+                  <span class="step-num">1</span>
+                  <div>
+                    <strong>Open a folder</strong>
+                    <p>Click <em>Open a Folder</em> above and select any local directory. All <code>.md</code>, <code>.mdx</code>, and <code>.markdown</code> files inside will appear in the sidebar.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="step-num">2</span>
+                  <div>
+                    <strong>Browse &amp; read</strong>
+                    <p>Click any file in the sidebar to open it. Folders are collapsible. Use the <strong>Contents</strong> tab to jump to headings, and <strong>Recent</strong> to revisit past files.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="step-num">3</span>
+                  <div>
+                    <strong>Search</strong>
+                    <p>Press <kbd>⌘K</kbd> to open the command palette — search file names and content across your entire folder instantly.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="step-num">4</span>
+                  <div>
+                    <strong>Hot reload</strong>
+                    <p>Toggle the <em>Live</em> button in the navbar. While active, the viewer automatically refreshes whenever you save changes to the file in your editor.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Keyboard shortcuts -->
+            <div class="welcome-section">
+              <h2>Keyboard shortcuts</h2>
+              <div class="welcome-shortcuts-grid">
+                <kbd>⌘K</kbd>         <span>Open command palette / search</span>
+                <kbd>⌘[</kbd>         <span>Previous file</span>
+                <kbd>⌘]</kbd>         <span>Next file</span>
+                <kbd>⌘⇧F</kbd>        <span>Find in files (full-text)</span>
+                <kbd>ESC</kbd>         <span>Close palette or settings</span>
+              </div>
+            </div>
+
+            <!-- Features -->
+            <div class="welcome-section">
+              <h2>Features</h2>
+              <ul class="welcome-features">
+                <li>Full <strong>GitHub Flavored Markdown</strong> — tables, task lists, front matter, code blocks</li>
+                <li><strong>Syntax highlighting</strong> for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON</li>
+                <li><strong>Hot reload</strong> — live preview as you edit in any external editor</li>
+                <li><strong>Full-text search</strong> across all files in the folder</li>
+                <li><strong>Table of contents</strong> with scroll-spy highlighting</li>
+                <li><strong>Resizable sidebar</strong>, font size &amp; reading width controls</li>
+                <li><strong>Light &amp; dark mode</strong> — toggle in the navbar</li>
+                <li>100% <strong>offline &amp; private</strong> — no data ever leaves your machine</li>
+              </ul>
+            </div>
+
+            <div class="welcome-footer">
+              Made by <a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Markdown content -->
+        <div id="content-wrapper" class="hidden">
+          <div id="reading-progress"></div>
+          <div id="file-breadcrumb">
+            <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+              <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.1" fill="none"/>
+            </svg>
+            <span id="file-path-display"></span>
+          </div>
+          <article id="content" class="markdown-body"></article>
+        </div>
+      </main>
+    </div>
+
+    <!-- Status bar -->
+    <div id="statusbar">
+      <span id="status-file"></span>
+      <span class="status-sep">·</span>
+      <span id="status-words"></span>
+      <span class="status-sep">·</span>
+      <span id="status-readtime"></span>
+      <div id="status-right">
+        <span id="status-modified"></span>
+        <span class="status-sep">·</span>
+        <span id="status-author"><a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a></span>
+      </div>
+    </div>
+
+    <!-- Command palette -->
+    <div id="command-palette" class="hidden" role="dialog" aria-modal="true">
+      <div id="palette-backdrop"></div>
+      <div id="palette-modal">
+        <div id="palette-search-row">
+          <svg width="16" height="16" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+            <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="palette-input" placeholder="Search files and content…" autocomplete="off" spellcheck="false">
+          <kbd class="palette-esc">ESC</kbd>
+        </div>
+        <div id="palette-results"></div>
+        <div id="palette-footer">
+          <span><kbd>↑↓</kbd> navigate</span>
+          <span><kbd>↵</kbd> open</span>
+          <span><kbd>ESC</kbd> close</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div id="settings-panel" class="hidden">
+      <div id="settings-backdrop"></div>
+      <div id="settings-modal">
+        <div id="settings-header">
+          <h2>Settings</h2>
+          <button id="btn-close-settings" class="btn-icon">✕</button>
+        </div>
+        <div id="settings-body">
+          <div class="setting-group">
+            <label>Font size</label>
+            <div class="setting-control">
+              <button class="btn-small" id="font-decrease">A−</button>
+              <span id="font-size-display">16px</span>
+              <button class="btn-small" id="font-increase">A+</button>
+            </div>
+          </div>
+          <div class="setting-group">
+            <label>Reading width</label>
+            <select id="reading-width">
+              <option value="680">Narrow (680px)</option>
+              <option value="780" selected>Normal (780px)</option>
+              <option value="960">Wide (960px)</option>
+              <option value="100%">Full width</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>Font family</label>
+            <select id="font-family">
+              <option value="sans">System sans-serif</option>
+              <option value="serif">Serif</option>
+              <option value="mono">Monospace</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label>Hot reload interval</label>
+            <select id="reload-interval">
+              <option value="500">500ms</option>
+              <option value="1000" selected>1 second</option>
+              <option value="2000">2 seconds</option>
+              <option value="5000">5 seconds</option>
+            </select>
+          </div>
+          <div class="settings-links">
+            <a href="about.html" target="_blank">About</a>
+            <span>·</span>
+            <a href="privacy.html" target="_blank">Privacy Policy</a>
+            <span>·</span>
+            <a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #app -->
+
+  <script src="lib/markdown.js"></script>
+  <script src="lib/highlighter.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
