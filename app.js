@@ -25,7 +25,7 @@ const state = {
     readingWidth: '780px',
     fontFamily: 'sans',
     reloadInterval: 1000,
-    theme: 'dark',
+    theme: 'light',
   },
 };
 

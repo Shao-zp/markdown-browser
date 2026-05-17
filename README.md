@@ -55,7 +55,7 @@ A Chrome extension for reading and organizing local markdown files — fast, pri
 
 ## Privacy
 
-This extension operates entirely offline. It does not collect, transmit, or store any data outside your local machine. See [privacy.html](privacy.html) for the full policy.
+This extension operates entirely offline. It does not collect, transmit, or store any data outside your local machine. See the [Privacy Policy](https://markdownbrowser.abhikuchbhi.in/privacy.html) for the full policy.
 
 ## Development
 

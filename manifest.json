@@ -3,6 +3,7 @@
   "name": "Markdown Browser",
   "version": "1.0.0",
   "description": "Read and organize local markdown files with sidebar navigation, full-text search, and hot reload.",
+  "homepage_url": "https://markdownbrowser.abhikuchbhi.in",
   "permissions": ["storage", "tabs"],
   "action": {
     "default_title": "Markdown Browser",
