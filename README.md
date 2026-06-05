@@ -1,27 +1,37 @@
 # Markdown Browser
 
-A Chrome extension for reading and organizing local markdown files — fast, private, and fully offline.
+A Chrome extension for reading, writing, and organizing local markdown files — fast, private, and fully offline.
 
 ![Markdown Browser](icons/icon128.png)
 
 ## Features
 
+### Reading
 - **Local file reading** via the File System Access API — no uploads, no cloud
 - **Sidebar file tree** with collapsible folders and live filter
-- **Hot reload** — viewer auto-refreshes when you save in your editor
-- **Full-text search** across all markdown files with `⌘K`
+- **Hot reload** — viewer auto-refreshes when you save in an external editor
+- **Full-text search** across all markdown files (`⌘K`)
 - **Table of contents** with scroll-spy highlighting
-- **Syntax highlighting** — JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON
-- **Front matter** display (YAML metadata)
-- **Light & dark mode** toggle
-- **Resizable sidebar**, adjustable font size, reading width, font family
+- **Syntax highlighting** for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON
+- **GitHub Flavored Markdown** — tables, task lists, front matter, code blocks
 - **Recent files** history
-- **100% offline** — no data leaves your machine
+- **Light & dark mode** with preference saved
+
+### Editing
+- **In-browser editor** — edit any file directly, save with `⌘S`
+- **Create new files** — add `.md` files to your folder from the sidebar
+- **Delete files** — remove files with a confirmation prompt
+- **Find & Replace** — `⌘F` to search and replace within the editor
+- **Export to PDF** — clean, print-ready output via the browser's print dialog
+
+### Customisation
+- **Resizable sidebar**, adjustable font size, reading width, font family
+- **100% offline** — no data ever leaves your machine
 
 ## Installation
 
 ### From Chrome Web Store
-*(Coming soon)*
+[Install Markdown Browser](https://chrome.google.com/webstore/detail/markdown-browser)
 
 ### Load unpacked (development)
 
@@ -38,6 +48,7 @@ A Chrome extension for reading and organizing local markdown files — fast, pri
 2. In the sidebar, click **Open Folder** and select a local directory
 3. Click any `.md` file to open it
 4. Press `⌘K` to search across all files
+5. Click **Edit** in the file breadcrumb to edit the file directly
 
 ## Keyboard Shortcuts
 
@@ -47,15 +58,18 @@ A Chrome extension for reading and organizing local markdown files — fast, pri
 | `⌘[` | Previous file |
 | `⌘]` | Next file |
 | `⌘⇧F` | Full-text search |
-| `ESC` | Close palette or settings |
+| `⌘E` | Enter / exit edit mode |
+| `⌘S` | Save file (edit mode) |
+| `⌘F` | Find & replace (edit mode) |
+| `ESC` | Close palette, settings, or find bar |
 
 ## Supported File Types
 
-`.md` · `.mdx` · `.markdown` · `.mdown` · `.mkd`
+`.md` · `.mdx` · `.markdown` · `.mdown` · `.mkd` · `.txt`
 
 ## Privacy
 
-This extension operates entirely offline. It does not collect, transmit, or store any data outside your local machine. See the [Privacy Policy](https://markdownbrowser.abhikuchbhi.in/privacy.html) for the full policy.
+This extension operates entirely offline. Read and write access to your files is granted only through Chrome's built-in permission dialog at your explicit request. No data is collected or transmitted. See the [Privacy Policy](https://markdownbrowser.abhikuchbhi.in/privacy.html) for the full policy.
 
 ## Development
 
@@ -63,18 +77,32 @@ Pure vanilla JS — no build step, no dependencies, no bundler.
 
 ```
 markdown-browser/
-├── manifest.json       MV3 manifest
-├── background.js       Service worker (opens app tab)
-├── app.html            Main single-page app
-├── app.js              App logic
-├── app.css             Anthropic-inspired dark/light theme
+├── manifest.json        MV3 manifest (v2.0.0)
+├── background.js        Service worker (opens app tab)
+├── app.html             Main single-page app
+├── app.js               App logic
+├── app.css              Anthropic-inspired dark/light theme
 ├── lib/
-│   ├── markdown.js     Custom GFM parser
-│   └── highlighter.js  Syntax highlighter
-├── about.html          About page
-├── privacy.html        Privacy policy
-└── icons/              Extension icons (PNG)
+│   ├── markdown.js      Custom GFM parser
+│   └── highlighter.js   Syntax highlighter
+├── about.html           About page
+├── privacy.html         Privacy policy
+└── icons/               Extension icons (PNG)
 ```
+
+## Changelog
+
+### v2.0.0
+- In-browser markdown editor with `⌘S` save
+- Create new files from the sidebar
+- Delete files with confirmation
+- Find & Replace (`⌘F`) in editor
+- Export to PDF with clean print output
+- Persistent search bar in the header
+- Visible Edit / PDF buttons in the file breadcrumb
+
+### v1.0.0
+- Initial release: read-only markdown viewer, hot reload, full-text search, TOC, syntax highlighting
 
 ## License
 

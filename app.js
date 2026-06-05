@@ -20,9 +20,12 @@ const state = {
   searchIndex: [],         // [{ path, name, content }]
   indexBuilt: false,
   recent: [],
+  editMode: false,
+  editUnsaved: false,
   settings: {
     fontSize: 16,
-    readingWidth: '780px',
+    readingWidth: '100%',
+    sidebarCollapsed: false,
     fontFamily: 'sans',
     reloadInterval: 1000,
     theme: 'light',
@@ -34,6 +37,7 @@ const state = {
 const $ = id => document.getElementById(id);
 const dom = {
   btnOpen:          $('btn-open'),          // sidebar open button
+  btnToggleSidebar: $('btn-toggle-sidebar'),
   btnSearch:        $('btn-search'),
   btnTheme:         $('btn-theme'),
   iconMoon:         $('icon-moon'),
@@ -43,6 +47,7 @@ const dom = {
   folderBreadcrumb: $('folder-breadcrumb'),
   folderName:       $('folder-name'),
   filePathDisplay:  $('file-path-display'),
+  fileBreadcrumb:   $('file-breadcrumb'),
   filterInput:      $('filter-input'),
   fileTree:         $('file-tree'),
   toc:              $('toc'),
@@ -72,6 +77,32 @@ const dom = {
   readingWidth:     $('reading-width'),
   fontFamily:       $('font-family'),
   reloadIntervalSel:$('reload-interval'),
+  sidebar:          $('sidebar'),
+  resizeHandle:     $('resize-handle'),
+  // Edit mode
+  btnEdit:          $('btn-edit'),
+  editorWrapper:    $('editor-wrapper'),
+  editorFilename:   $('editor-filename'),
+  editorUnsaved:    $('editor-unsaved'),
+  btnSaveEditor:    $('btn-save-editor'),
+  btnDiscardEditor: $('btn-discard-editor'),
+  editorTextarea:   $('editor-textarea'),
+  // Find & replace
+  findBar:          $('find-bar'),
+  findInput:        $('find-input'),
+  replaceInput:     $('replace-input'),
+  findStatus:       $('find-status'),
+  btnFindPrev:      $('btn-find-prev'),
+  btnFindNext:      $('btn-find-next'),
+  btnReplaceOne:    $('btn-replace-one'),
+  btnReplaceAll:    $('btn-replace-all'),
+  btnCloseFindBar:  $('btn-close-find'),
+  // New file
+  btnNewFile:       $('btn-new-file'),
+  newFileRow:       $('new-file-row'),
+  newFileInput:     $('new-file-input'),
+  // Export
+  btnExportPdf:     $('btn-export-pdf'),
 };
 
 // ── Init ───────────────────────────────────────────────────────
@@ -111,6 +142,8 @@ function applySettings() {
   document.documentElement.style.setProperty('--reading-font-size', s.fontSize + 'px');
   const widthVal = s.readingWidth === '100%' ? '100%' : s.readingWidth + 'px';
   dom.content.style.maxWidth = widthVal;
+  if (dom.fileBreadcrumb) dom.fileBreadcrumb.style.maxWidth = widthVal;
+  dom.sidebar.classList.toggle('collapsed', !!s.sidebarCollapsed);
   const fontMap = { sans: 'var(--font-reading-sans)', serif: 'var(--font-serif)', mono: 'var(--font-mono)' };
   document.documentElement.style.setProperty('--reading-font', fontMap[s.fontFamily] || fontMap.sans);
   dom.fontSizeDisplay.textContent = s.fontSize + 'px';
@@ -132,6 +165,12 @@ function applyTheme(theme) {
 function toggleTheme() {
   state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
   applyTheme(state.settings.theme);
+  saveSettings();
+}
+
+function toggleSidebar() {
+  state.settings.sidebarCollapsed = !state.settings.sidebarCollapsed;
+  dom.sidebar.classList.toggle('collapsed', state.settings.sidebarCollapsed);
   saveSettings();
 }
 
@@ -225,6 +264,7 @@ async function mountFolder(handle) {
   state.folderName = handle.name;
   dom.folderName.textContent = handle.name;
   dom.folderBreadcrumb.classList.remove('hidden');
+  dom.btnNewFile.classList.remove('hidden');
 
   state.files.clear();
   state.searchIndex = [];
@@ -314,6 +354,17 @@ function renderNode(node, depth, filter) {
           <path d="M8 1v3h3" stroke="currentColor" stroke-width="1.2"/>
         </svg>
         <span class="tree-name">${highlightMatch(file.name, filter)}</span>
+        <button class="tree-copy-btn" data-path="${escAttr(file.path)}" title="Copy path">
+          <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+            <rect x="2" y="4" width="9" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M5 4V2.5A1.5 1.5 0 016.5 1h6A1.5 1.5 0 0114 2.5v9A1.5 1.5 0 0112.5 13H11" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+        </button>
+        <button class="tree-delete-btn" data-path="${escAttr(file.path)}" title="Delete file">
+          <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+            <path d="M5 2h5M2 4h11M4 4l.9 9h5.2L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     `;
   }
@@ -331,6 +382,80 @@ function bindTreeEvents() {
       el.nextElementSibling?.classList.toggle('open');
     });
   });
+  dom.fileTree.querySelectorAll('.tree-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      await navigator.clipboard.writeText(btn.dataset.path);
+      const origHTML = btn.innerHTML;
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 8l3.5 3.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      btn.style.color = '#5D9E72';
+      setTimeout(() => { btn.innerHTML = origHTML; btn.style.color = ''; }, 1500);
+    });
+  });
+  dom.fileTree.querySelectorAll('.tree-delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteFile(btn.dataset.path);
+    });
+  });
+}
+
+// ── File deletion ─────────────────────────────────────────────
+
+async function getParentDirHandle(dir) {
+  if (!dir) return state.folderHandle;
+  let handle = state.folderHandle;
+  for (const part of dir.split('/')) {
+    handle = await handle.getDirectoryHandle(part);
+  }
+  return handle;
+}
+
+async function deleteFile(path) {
+  const info = state.files.get(path);
+  if (!info) return;
+
+  if (!confirm(`Delete "${info.name}"?\n\nThis action cannot be undone.`)) return;
+
+  try {
+    const perm = await state.folderHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') return;
+
+    const parentDir = await getParentDirHandle(info.dir);
+    await parentDir.removeEntry(info.name);
+
+    state.files.delete(path);
+    state.searchIndex = state.searchIndex.filter(e => e.path !== path);
+    state.recent = state.recent.filter(r => r.path !== path);
+    await chromeSet('recent', state.recent);
+    renderRecentList();
+
+    state.tree = buildTree();
+    renderFileTree(state.tree);
+
+    // If the deleted file was open, return to the welcome screen
+    if (state.currentPath === path) {
+      stopHotReload();
+      if (state.editMode) {
+        state.editMode = false;
+        state.editUnsaved = false;
+        dom.findBar.classList.add('hidden');
+        dom.editorWrapper.classList.add('hidden');
+        dom.btnEdit.classList.remove('active');
+      }
+      state.currentPath = null;
+      state.currentHandle = null;
+      dom.contentWrapper.classList.add('hidden');
+      dom.btnEdit.classList.add('hidden');
+      dom.welcome.style.display = '';
+      dom.welcome.classList.add('visible');
+      dom.statusFile.textContent = '';
+      dom.statusWords.textContent = '';
+      dom.statusReadtime.textContent = '';
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') alert('Failed to delete file: ' + e.message);
+  }
 }
 
 // ── File opening ───────────────────────────────────────────────
@@ -339,8 +464,11 @@ async function openFile(path) {
   const info = state.files.get(path);
   if (!info) return;
 
+  if (state.editMode && !exitEditMode()) return;
+
   state.currentPath = path;
   state.currentHandle = info.handle;
+  dom.btnEdit.classList.remove('hidden');
 
   try {
     const file = await info.handle.getFile();
@@ -356,7 +484,10 @@ async function openFile(path) {
   }
 }
 
-function renderDocument(path, name, text) {
+function renderDocument(path, name, text, preserveScroll = false) {
+  const viewer = document.getElementById('viewer');
+  const savedScroll = preserveScroll ? viewer.scrollTop : 0;
+
   const { html, headings } = Markdown.parse(text);
 
   dom.welcome.classList.remove('visible');
@@ -378,9 +509,8 @@ function renderDocument(path, name, text) {
   renderTOC(headings);
   updateStatusBar(name, text);
 
-  // Scroll to top
-  document.getElementById('viewer').scrollTop = 0;
-  dom.statusModified.textContent = '';
+  viewer.scrollTop = savedScroll;
+  if (!preserveScroll) dom.statusModified.textContent = '';
 }
 
 // ── Table of Contents ──────────────────────────────────────────
@@ -454,6 +584,8 @@ function updateLiveIndicator() {
 
 // ── Hot reload ─────────────────────────────────────────────────
 
+let isCheckingChanges = false;
+
 function startHotReload() {
   stopHotReload();
   if (!state.hotReload || !state.currentHandle) return;
@@ -465,17 +597,29 @@ function stopHotReload() {
 }
 
 async function checkForChanges() {
-  if (!state.currentHandle) return;
+  if (!state.currentHandle || isCheckingChanges || state.editMode) return;
+  isCheckingChanges = true;
   try {
     const file = await state.currentHandle.getFile();
     if (file.lastModified !== state.currentLastModified) {
       state.currentLastModified = file.lastModified;
       const text = await file.text();
-      renderDocument(state.currentPath, state.files.get(state.currentPath)?.name || '', text);
+      renderDocument(state.currentPath, state.files.get(state.currentPath)?.name || '', text, true);
       dom.statusModified.textContent = 'Updated ' + new Date().toLocaleTimeString();
       setTimeout(() => { dom.statusModified.textContent = ''; }, 3000);
     }
-  } catch (_) {}
+  } catch (e) {
+    if (e.name === 'NotAllowedError') {
+      // Permission expired — stop polling and indicate to user
+      stopHotReload();
+      state.hotReload = false;
+      updateLiveIndicator();
+      dom.statusModified.textContent = 'Live reload paused — re-open folder to resume';
+      setTimeout(() => { dom.statusModified.textContent = ''; }, 5000);
+    }
+  } finally {
+    isCheckingChanges = false;
+  }
 }
 
 // ── Search index ───────────────────────────────────────────────
@@ -712,13 +856,292 @@ function initResizeHandle() {
   });
 }
 
+// ── Edit mode ──────────────────────────────────────────────────
+
+async function enterEditMode() {
+  if (!state.currentHandle) return;
+  try {
+    const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') return;
+  } catch (e) {
+    return;
+  }
+
+  stopHotReload();
+  state.editMode = true;
+  state.editUnsaved = false;
+
+  const file = await state.currentHandle.getFile();
+  const text = await file.text();
+
+  dom.editorFilename.textContent = state.files.get(state.currentPath)?.name || '';
+  dom.editorTextarea.value = text;
+  dom.editorUnsaved.classList.add('hidden');
+  dom.editorUnsaved.textContent = '';
+
+  dom.contentWrapper.classList.add('hidden');
+  dom.editorWrapper.classList.remove('hidden');
+  dom.btnEdit.classList.add('active');
+  dom.editorTextarea.focus();
+}
+
+function exitEditMode() {
+  if (state.editUnsaved) {
+    if (!confirm('You have unsaved changes. Discard them?')) return false;
+  }
+  dom.findBar.classList.add('hidden');
+  state.editMode = false;
+  state.editUnsaved = false;
+  dom.editorWrapper.classList.add('hidden');
+  dom.contentWrapper.classList.remove('hidden');
+  dom.btnEdit.classList.remove('active');
+  if (state.hotReload) startHotReload();
+  return true;
+}
+
+async function saveFile() {
+  if (!state.currentHandle || !state.editMode) return;
+  try {
+    const content = dom.editorTextarea.value;
+    const writable = await state.currentHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+
+    const file = await state.currentHandle.getFile();
+    state.currentLastModified = file.lastModified;
+    state.editUnsaved = false;
+
+    // Render the updated content and return to view mode
+    const info = state.files.get(state.currentPath);
+    renderDocument(state.currentPath, info?.name || '', content);
+
+    dom.findBar.classList.add('hidden');
+    state.editMode = false;
+    dom.editorWrapper.classList.add('hidden');
+    dom.btnEdit.classList.remove('active');
+    if (state.hotReload) startHotReload();
+
+    dom.statusModified.textContent = 'Saved';
+    setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
+  } catch (e) {
+    console.error('Failed to save:', e);
+    alert('Failed to save file: ' + e.message);
+  }
+}
+
+// ── Create new file ────────────────────────────────────────────
+
+function showNewFileInput() {
+  dom.newFileRow.classList.remove('hidden');
+  dom.newFileInput.value = '';
+  dom.newFileInput.focus();
+}
+
+function hideNewFileInput() {
+  dom.newFileRow.classList.add('hidden');
+  dom.newFileInput.value = '';
+}
+
+async function confirmNewFile() {
+  let name = dom.newFileInput.value.trim();
+  hideNewFileInput();
+  if (!name || !state.folderHandle) return;
+  if (!name.includes('.')) name += '.md';
+
+  if (state.files.has(name)) {
+    alert(`"${name}" already exists.`);
+    return;
+  }
+
+  try {
+    const perm = await state.folderHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') return;
+
+    const fileHandle = await state.folderHandle.getFileHandle(name, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write('');
+    await writable.close();
+
+    state.files.set(name, { handle: fileHandle, name, dir: '', lastModified: 0 });
+    state.searchIndex.push({ path: name, name, content: '', rawContent: '' });
+    state.tree = buildTree();
+    renderFileTree(state.tree);
+
+    await openFile(name);
+    await enterEditMode();
+  } catch (e) {
+    if (e.name !== 'AbortError') alert('Failed to create file: ' + e.message);
+  }
+}
+
+// ── Find & Replace ─────────────────────────────────────────────
+
+let findMatches = [];
+let findCurrentIdx = -1;
+
+function openFindReplace() {
+  if (!state.editMode) return;
+  dom.findBar.classList.remove('hidden');
+  dom.findInput.focus();
+  dom.findInput.select();
+  updateFindMatches();
+}
+
+function closeFindReplace() {
+  dom.findBar.classList.add('hidden');
+  findMatches = [];
+  findCurrentIdx = -1;
+  dom.editorTextarea.focus();
+}
+
+function updateFindMatches() {
+  const query = dom.findInput.value;
+  findMatches = [];
+  findCurrentIdx = -1;
+
+  if (!query) { updateFindStatus(); return; }
+
+  const text = dom.editorTextarea.value.toLowerCase();
+  const q = query.toLowerCase();
+  let idx = 0;
+  while ((idx = text.indexOf(q, idx)) !== -1) {
+    findMatches.push(idx);
+    idx += q.length;
+  }
+
+  if (findMatches.length) {
+    findCurrentIdx = 0;
+    selectFindMatch(0);
+  }
+  updateFindStatus();
+}
+
+function selectFindMatch(idx) {
+  if (idx < 0 || idx >= findMatches.length) return;
+  const start = findMatches[idx];
+  const end = start + dom.findInput.value.length;
+  dom.editorTextarea.focus();
+  dom.editorTextarea.setSelectionRange(start, end);
+  const linesBefore = dom.editorTextarea.value.substring(0, start).split('\n').length;
+  const lh = parseInt(getComputedStyle(dom.editorTextarea).lineHeight) || 24;
+  dom.editorTextarea.scrollTop = Math.max(0, (linesBefore - 5) * lh);
+}
+
+function findNext() {
+  if (!findMatches.length) return;
+  findCurrentIdx = (findCurrentIdx + 1) % findMatches.length;
+  selectFindMatch(findCurrentIdx);
+  updateFindStatus();
+}
+
+function findPrev() {
+  if (!findMatches.length) return;
+  findCurrentIdx = (findCurrentIdx - 1 + findMatches.length) % findMatches.length;
+  selectFindMatch(findCurrentIdx);
+  updateFindStatus();
+}
+
+function replaceCurrent() {
+  if (findCurrentIdx < 0 || !findMatches.length) return;
+  const query = dom.findInput.value;
+  const replacement = dom.replaceInput.value;
+  const start = findMatches[findCurrentIdx];
+  dom.editorTextarea.value =
+    dom.editorTextarea.value.substring(0, start) +
+    replacement +
+    dom.editorTextarea.value.substring(start + query.length);
+  markEditorUnsaved();
+  updateFindMatches();
+}
+
+function replaceAll() {
+  const query = dom.findInput.value;
+  if (!query) return;
+  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  dom.editorTextarea.value = dom.editorTextarea.value.replace(re, dom.replaceInput.value);
+  markEditorUnsaved();
+  updateFindMatches();
+}
+
+function updateFindStatus() {
+  if (!dom.findInput.value) {
+    dom.findStatus.textContent = '';
+    dom.findStatus.classList.remove('no-match');
+    return;
+  }
+  if (!findMatches.length) {
+    dom.findStatus.textContent = 'No results';
+    dom.findStatus.classList.add('no-match');
+    return;
+  }
+  dom.findStatus.classList.remove('no-match');
+  dom.findStatus.textContent = `${findCurrentIdx + 1} / ${findMatches.length}`;
+}
+
+function markEditorUnsaved() {
+  state.editUnsaved = true;
+  dom.editorUnsaved.textContent = '● Unsaved';
+  dom.editorUnsaved.classList.remove('hidden', 'saved');
+}
+
+// ── Export PDF ─────────────────────────────────────────────────
+
+function exportPDF() {
+  window.print();
+}
+
 // ── Event bindings ─────────────────────────────────────────────
 
 function bindEvents() {
   // Open folder
   dom.btnOpen.addEventListener('click', openFolder);
 
-  // Search / palette
+  // Edit mode
+  dom.btnEdit.addEventListener('click', () => {
+    if (state.editMode) exitEditMode();
+    else enterEditMode();
+  });
+  dom.btnSaveEditor.addEventListener('click', saveFile);
+  dom.btnDiscardEditor.addEventListener('click', () => exitEditMode());
+  dom.editorTextarea.addEventListener('input', markEditorUnsaved);
+  dom.editorTextarea.addEventListener('keydown', e => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = e.target.selectionStart;
+      const end = e.target.selectionEnd;
+      e.target.value = e.target.value.substring(0, s) + '  ' + e.target.value.substring(end);
+      e.target.selectionStart = e.target.selectionEnd = s + 2;
+    }
+  });
+
+  // Find & replace
+  dom.findInput.addEventListener('input', updateFindMatches);
+  dom.findInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? findPrev() : findNext(); }
+    if (e.key === 'Escape') { e.preventDefault(); closeFindReplace(); }
+  });
+  dom.replaceInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); closeFindReplace(); }
+  });
+  dom.btnFindPrev.addEventListener('click', findPrev);
+  dom.btnFindNext.addEventListener('click', findNext);
+  dom.btnReplaceOne.addEventListener('click', replaceCurrent);
+  dom.btnReplaceAll.addEventListener('click', replaceAll);
+  dom.btnCloseFindBar.addEventListener('click', closeFindReplace);
+
+  // New file
+  dom.btnNewFile.addEventListener('click', showNewFileInput);
+  dom.newFileInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirmNewFile(); }
+    if (e.key === 'Escape') { e.preventDefault(); hideNewFileInput(); }
+  });
+  dom.newFileInput.addEventListener('blur', () => setTimeout(hideNewFileInput, 150));
+
+  // Export PDF
+  dom.btnExportPdf.addEventListener('click', exportPDF);
+
+  // Search bar + palette
+  $('search-bar').addEventListener('click', openPalette);
   dom.btnSearch.addEventListener('click', openPalette);
   dom.paletteBackdrop.addEventListener('click', closePalette);
   dom.paletteInput.addEventListener('input', e => {
@@ -740,9 +1163,19 @@ function bindEvents() {
   // Theme toggle
   dom.btnTheme.addEventListener('click', toggleTheme);
 
+  // Sidebar toggle
+  dom.btnToggleSidebar.addEventListener('click', toggleSidebar);
+
   // Hot reload toggle
-  dom.btnReloadToggle.addEventListener('click', () => {
+  dom.btnReloadToggle.addEventListener('click', async () => {
     state.hotReload = !state.hotReload;
+    if (state.hotReload && state.folderHandle) {
+      // Re-request permission on user gesture in case it expired
+      try {
+        const perm = await state.folderHandle.requestPermission({ mode: 'read' });
+        if (perm !== 'granted') { state.hotReload = false; }
+      } catch (_) {}
+    }
     updateLiveIndicator();
     if (state.hotReload) startHotReload();
     else stopHotReload();
@@ -784,6 +1217,14 @@ function bindEvents() {
   // Scroll spy + reading progress
   document.getElementById('viewer').addEventListener('scroll', updateScrollSpy, { passive: true });
 
+  // Immediately check for changes when the tab regains focus
+  // (Chrome throttles setInterval in background tabs)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.hotReload && state.currentHandle) {
+      checkForChanges();
+    }
+  });
+
   // Global keyboard shortcuts
   document.addEventListener('keydown', e => {
     const mod = e.metaKey || e.ctrlKey;
@@ -792,7 +1233,16 @@ function bindEvents() {
     if (mod && e.shiftKey && e.key === 'f') { e.preventDefault(); openPalette(); return; }
     if (mod && e.key === ']') { e.preventDefault(); navigateFile(1); return; }
     if (mod && e.key === '[') { e.preventDefault(); navigateFile(-1); return; }
+    if (mod && e.key === 'b') { e.preventDefault(); toggleSidebar(); return; }
+    if (mod && e.key === 's') { e.preventDefault(); saveFile(); return; }
+    if (mod && e.key === 'e' && state.currentPath) {
+      e.preventDefault();
+      if (state.editMode) exitEditMode(); else enterEditMode();
+      return;
+    }
+    if (mod && e.key === 'f' && state.editMode) { e.preventDefault(); openFindReplace(); return; }
     if (e.key === 'Escape') {
+      if (!dom.findBar.classList.contains('hidden')) { closeFindReplace(); return; }
       closePalette();
       closeSettings();
     }

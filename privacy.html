@@ -105,7 +105,7 @@
 
     <div class="privacy-header">
       <h1>Privacy Policy</h1>
-      <p>Last updated: May 2025 · Effective immediately</p>
+      <p>Last updated: June 2025 · Effective immediately</p>
     </div>
 
     <div class="highlight-box">
@@ -119,12 +119,14 @@
 
     <div class="privacy-section">
       <h2>2. File access</h2>
-      <p>The extension uses Chrome's <strong>File System Access API</strong> to read markdown files from folders you explicitly open. This access:</p>
+      <p>The extension uses Chrome's <strong>File System Access API</strong> to access markdown files from folders you explicitly open. This access:</p>
       <ul>
-        <li>Requires your active consent through Chrome's built-in permission dialog</li>
-        <li>Is scoped only to the folder you select</li>
-        <li>Is read-only — the extension never writes, modifies, or deletes your files</li>
-        <li>Never transmits file contents anywhere — all reading and rendering happens locally in your browser</li>
+        <li>Requires your active consent through Chrome's built-in permission dialog each time a new permission level is needed</li>
+        <li>Is scoped only to the folder you select — the extension cannot access anything outside that folder</li>
+        <li>Is <strong>read-only by default</strong> — opening and viewing files never modifies anything</li>
+        <li>Requests <strong>write permission only when you initiate an action that requires it</strong>: editing a file, saving edits, creating a new file, or deleting a file. Chrome will prompt you to grant write access at that moment</li>
+        <li>Write actions (save, create, delete) are always <em>user-initiated</em> — the extension never modifies files automatically or in the background</li>
+        <li>Never transmits file contents anywhere — all reading, writing, and rendering happens entirely within your browser</li>
       </ul>
     </div>
 

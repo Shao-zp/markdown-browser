@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Markdown Browser",
-  "version": "1.0.0",
-  "description": "Read and organize local markdown files with sidebar navigation, full-text search, and hot reload.",
+  "version": "2.0.0",
+  "description": "Read, write, and organize local markdown files. Full-text search, in-browser editor, hot reload — 100% offline & private.",
   "homepage_url": "https://markdownbrowser.abhikuchbhi.in",
   "permissions": ["storage", "tabs"],
   "action": {

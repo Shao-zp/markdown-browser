@@ -12,6 +12,12 @@
     <!-- Header -->
     <header id="header">
       <div id="header-left">
+        <button id="btn-toggle-sidebar" class="btn-icon" title="Toggle sidebar (⌘B)">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <rect x="1.5" y="1.5" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5.5 1.5v12" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
         <div id="app-logo">Markdown<span>Browser</span></div>
         <div id="folder-breadcrumb" class="hidden">
           <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
@@ -21,16 +27,19 @@
         </div>
       </div>
 
-      <div id="header-center"></div>
-
-      <div id="header-right">
-        <button id="btn-search" class="btn-icon" title="Quick search (⌘K)">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <div id="header-center">
+        <div id="search-bar" title="Search files and content (⌘K)">
+          <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
             <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
             <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
+          <span id="search-bar-label">Search files and content…</span>
           <kbd>⌘K</kbd>
-        </button>
+        </div>
+      </div>
+
+      <div id="header-right">
+        <button id="btn-search" class="btn-icon" style="display:none" title="Quick search (⌘K)">
         <button id="btn-theme" class="btn-icon" title="Toggle light / dark mode">
           <svg id="icon-moon" width="15" height="15" viewBox="0 0 15 15" fill="none">
             <path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12zM2 7.5a5.5 5.5 0 015.5-5.5c-.41.9-.65 1.93-.65 3a6.35 6.35 0 006.35 6.35c-.9.41-1.93.65-3 .65A5.5 5.5 0 012 7.5z" fill="currentColor"/>
@@ -88,6 +97,18 @@
               <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
             <input type="text" id="filter-input" placeholder="Filter files…" autocomplete="off" spellcheck="false">
+            <button id="btn-new-file" class="btn-new-file hidden" title="New file">
+              <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+                <path d="M7.5 2v11M2 7.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div id="new-file-row" class="hidden">
+            <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+              <path d="M4 1h5.5L12 3.5V13a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M8 1v3h3" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+            <input type="text" id="new-file-input" placeholder="filename.md" autocomplete="off" spellcheck="false">
           </div>
           <div id="file-tree">
             <div id="empty-state" class="empty-state">
@@ -143,7 +164,7 @@
               </div>
               <div>
                 <h1>Markdown<span>Browser</span></h1>
-                <p class="welcome-tagline">A local markdown reader — fast, private, offline.</p>
+                <p class="welcome-tagline">A local markdown reader &amp; editor — fast, private, offline.</p>
               </div>
             </div>
 
@@ -152,8 +173,8 @@
             <!-- About -->
             <div class="welcome-section">
               <h2>About</h2>
-              <p>Markdown Browser lets you read, browse, and search your local <code>.md</code> files directly in Chrome — no uploads, no cloud, no internet required. Your files stay on your machine.</p>
-              <p>Built with the <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" target="_blank">File System Access API</a> so Chrome reads your folder directly with your permission.</p>
+              <p>Markdown Browser lets you read, write, and search your local <code>.md</code> files directly in Chrome — no uploads, no cloud, no internet required. Your files stay on your machine.</p>
+              <p>Built with the <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" target="_blank">File System Access API</a> so Chrome accesses your folder directly with your explicit permission.</p>
             </div>
 
             <!-- How to use -->
@@ -164,28 +185,42 @@
                   <span class="step-num">1</span>
                   <div>
                     <strong>Open a folder</strong>
-                    <p>Click <em>Open a Folder</em> above and select any local directory. All <code>.md</code>, <code>.mdx</code>, and <code>.markdown</code> files inside will appear in the sidebar.</p>
+                    <p>Click <em>Open Folder</em> in the sidebar and select any local directory. All <code>.md</code>, <code>.mdx</code>, and <code>.markdown</code> files will appear in the file tree.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">2</span>
                   <div>
                     <strong>Browse &amp; read</strong>
-                    <p>Click any file in the sidebar to open it. Folders are collapsible. Use the <strong>Contents</strong> tab to jump to headings, and <strong>Recent</strong> to revisit past files.</p>
+                    <p>Click any file to open it. Use the <strong>Contents</strong> tab to jump to headings, and <strong>Recent</strong> to revisit past files. Use <kbd>⌘[</kbd> / <kbd>⌘]</kbd> to navigate between files.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">3</span>
                   <div>
-                    <strong>Search</strong>
-                    <p>Press <kbd>⌘K</kbd> to open the command palette — search file names and content across your entire folder instantly.</p>
+                    <strong>Edit &amp; save</strong>
+                    <p>Click <strong>Edit</strong> in the file breadcrumb (or press <kbd>⌘E</kbd>) to open the in-browser editor. Press <kbd>⌘S</kbd> to save. Use <kbd>⌘F</kbd> for find &amp; replace.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">4</span>
                   <div>
-                    <strong>Hot reload</strong>
-                    <p>Toggle the <em>Live</em> button in the navbar. While active, the viewer automatically refreshes whenever you save changes to the file in your editor.</p>
+                    <strong>Create &amp; delete</strong>
+                    <p>Click the <strong>+</strong> button in the sidebar to create a new file. Hover any file to reveal the delete button. All file changes require your explicit permission.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="step-num">5</span>
+                  <div>
+                    <strong>Search</strong>
+                    <p>Click the search bar in the header (or press <kbd>⌘K</kbd>) to search filenames and content across your entire folder instantly.</p>
+                  </div>
+                </div>
+                <div class="welcome-step">
+                  <span class="step-num">6</span>
+                  <div>
+                    <strong>Export &amp; hot reload</strong>
+                    <p>Click <strong>PDF</strong> in the breadcrumb to export a clean print. Toggle <em>Live</em> in the header to auto-refresh when you save in an external editor.</p>
                   </div>
                 </div>
               </div>
@@ -195,11 +230,14 @@
             <div class="welcome-section">
               <h2>Keyboard shortcuts</h2>
               <div class="welcome-shortcuts-grid">
-                <kbd>⌘K</kbd>         <span>Open command palette / search</span>
-                <kbd>⌘[</kbd>         <span>Previous file</span>
-                <kbd>⌘]</kbd>         <span>Next file</span>
-                <kbd>⌘⇧F</kbd>        <span>Find in files (full-text)</span>
-                <kbd>ESC</kbd>         <span>Close palette or settings</span>
+                <kbd>⌘K</kbd>     <span>Search files and content</span>
+                <kbd>⌘E</kbd>     <span>Enter / exit edit mode</span>
+                <kbd>⌘S</kbd>     <span>Save file (edit mode)</span>
+                <kbd>⌘F</kbd>     <span>Find &amp; replace (edit mode)</span>
+                <kbd>⌘[</kbd>     <span>Previous file</span>
+                <kbd>⌘]</kbd>     <span>Next file</span>
+                <kbd>⌘B</kbd>     <span>Toggle sidebar</span>
+                <kbd>ESC</kbd>    <span>Close palette, settings, or find bar</span>
               </div>
             </div>
 
@@ -207,13 +245,17 @@
             <div class="welcome-section">
               <h2>Features</h2>
               <ul class="welcome-features">
+                <li><strong>In-browser editor</strong> — edit files directly, save with <kbd style="font-size:10px;background:var(--bg-3);border:1px solid var(--border-light);border-radius:3px;padding:1px 4px">⌘S</kbd></li>
+                <li><strong>Create &amp; delete files</strong> — manage your markdown folder without leaving the app</li>
+                <li><strong>Find &amp; Replace</strong> — search and replace within the editor</li>
+                <li><strong>Export to PDF</strong> — clean, print-ready output</li>
                 <li>Full <strong>GitHub Flavored Markdown</strong> — tables, task lists, front matter, code blocks</li>
                 <li><strong>Syntax highlighting</strong> for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON</li>
                 <li><strong>Hot reload</strong> — live preview as you edit in any external editor</li>
                 <li><strong>Full-text search</strong> across all files in the folder</li>
                 <li><strong>Table of contents</strong> with scroll-spy highlighting</li>
                 <li><strong>Resizable sidebar</strong>, font size &amp; reading width controls</li>
-                <li><strong>Light &amp; dark mode</strong> — toggle in the navbar</li>
+                <li><strong>Light &amp; dark mode</strong> — toggle in the header</li>
                 <li>100% <strong>offline &amp; private</strong> — no data ever leaves your machine</li>
               </ul>
             </div>
@@ -229,12 +271,83 @@
         <div id="content-wrapper" class="hidden">
           <div id="reading-progress"></div>
           <div id="file-breadcrumb">
-            <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
-              <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.1" fill="none"/>
-            </svg>
-            <span id="file-path-display"></span>
+            <div id="file-breadcrumb-left">
+              <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.1" fill="none"/>
+              </svg>
+              <span id="file-path-display"></span>
+            </div>
+            <div id="file-breadcrumb-actions">
+              <button id="btn-export-pdf" class="btn-breadcrumb-action" title="Export to PDF">
+                <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                  <path d="M3.5 1h8L14 3.5V13.5a.5.5 0 01-.5.5h-10a.5.5 0 01-.5-.5V1.5a.5.5 0 01.5-.5z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                  <path d="M8.5 1v3.5H14" stroke="currentColor" stroke-width="1.2"/>
+                  <path d="M5.5 8.5h4M5.5 10.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                PDF
+              </button>
+              <button id="btn-edit" class="btn-breadcrumb-action btn-edit-file" title="Edit file (⌘E)">
+                <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                  <path d="M11.5 1L14 3.5 5 12.5H2.5V10L11.5 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+                  <path d="M9.5 3L12 5.5" stroke="currentColor" stroke-width="1.3"/>
+                </svg>
+                Edit
+              </button>
+            </div>
           </div>
           <article id="content" class="markdown-body"></article>
+        </div>
+
+        <!-- Editor -->
+        <div id="editor-wrapper" class="hidden">
+          <div id="editor-toolbar">
+            <div id="editor-breadcrumb-left">
+              <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.1" fill="none"/>
+              </svg>
+              <span id="editor-filename"></span>
+            </div>
+            <span id="editor-unsaved" class="hidden"></span>
+            <div class="editor-toolbar-spacer"></div>
+            <button id="btn-discard-editor" class="btn-icon">Discard</button>
+            <button id="btn-save-editor" class="btn-primary">
+              <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                <path d="M3 2h7.5L13 4.5V13H2V2h1z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                <rect x="5" y="2" width="5" height="3.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+                <rect x="3.5" y="8" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+              Save
+              <kbd>⌘S</kbd>
+            </button>
+          </div>
+          <div id="find-bar" class="hidden">
+            <div class="find-group">
+              <input type="text" id="find-input" placeholder="Find…" autocomplete="off" spellcheck="false">
+              <span id="find-status"></span>
+              <button id="btn-find-prev" class="btn-icon" title="Previous (Shift+Enter)">
+                <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+                  <path d="M7.5 12V3M3.5 6.5L7.5 3l4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <button id="btn-find-next" class="btn-icon" title="Next (Enter)">
+                <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+                  <path d="M7.5 3v9M3.5 8.5L7.5 12l4-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            <div class="find-sep"></div>
+            <div class="find-group">
+              <input type="text" id="replace-input" placeholder="Replace with…" autocomplete="off" spellcheck="false">
+              <button id="btn-replace-one" class="btn-small">Replace</button>
+              <button id="btn-replace-all" class="btn-small">All</button>
+            </div>
+            <button id="btn-close-find" class="btn-icon find-close" title="Close (Esc)">
+              <svg width="10" height="10" viewBox="0 0 15 15" fill="none">
+                <path d="M2 2l11 11M13 2L2 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <textarea id="editor-textarea" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
         </div>
       </main>
     </div>

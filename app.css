@@ -130,7 +130,52 @@ body {
   user-select: none;
 }
 #app-logo span { color: var(--accent); }
-#header-center { flex: 1; min-width: 0; text-align: center; }
+#header-center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+  height: 30px;
+  padding: 0 11px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--t), background var(--t);
+  user-select: none;
+}
+#search-bar:hover {
+  border-color: var(--accent-border);
+  background: var(--bg-4);
+}
+#search-bar svg { color: var(--text-3); flex-shrink: 0; }
+#search-bar-label {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#search-bar kbd {
+  font-family: inherit;
+  font-size: 10.5px;
+  color: var(--text-3);
+  background: var(--bg-2);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
 #header-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 #folder-breadcrumb {
@@ -159,20 +204,44 @@ body {
 #file-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 7px;
-  max-width: 780px;
+  justify-content: space-between;
   margin: 0 auto;
   padding: 18px 48px 0;
   font-size: 11.5px;
   color: var(--text-3);
+}
+#file-breadcrumb-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
   overflow: hidden;
 }
-#file-breadcrumb svg { flex-shrink: 0; color: var(--text-3); }
+#file-breadcrumb-left svg { flex-shrink: 0; color: var(--text-3); }
 #file-path-display {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.btn-edit-file {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--accent-dim);
+  color: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--t), color var(--t);
+}
+.btn-edit-file:hover { background: var(--accent); color: #fff; }
+.btn-edit-file.active { background: var(--accent); color: #fff; }
 
 /* Main */
 #main {
@@ -283,6 +352,17 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   border-right: 1px solid var(--border);
   flex-shrink: 0;
   overflow: hidden;
+  transition: width var(--t2), min-width var(--t2), border-color var(--t2);
+}
+
+#sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-right-color: transparent;
+}
+
+#sidebar.collapsed + #resize-handle {
+  display: none;
 }
 
 #sidebar-tabs {
@@ -373,7 +453,43 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .tree-icon { flex-shrink: 0; color: var(--text-3); }
 .tree-icon-folder { color: var(--accent); opacity: 0.75; }
-.tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tree-name { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+
+.tree-copy-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 3px;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t), color var(--t), background var(--t);
+}
+.tree-item:hover .tree-copy-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tree-copy-btn:hover { color: var(--text-1); background: var(--bg-4); }
+
+.tree-delete-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 3px;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t), color var(--t), background var(--t);
+}
+.tree-item:hover .tree-delete-btn {
+  opacity: 1;
+  pointer-events: auto;
+}
+.tree-delete-btn:hover { color: #E06C75; background: rgba(224, 108, 117, 0.15); }
 
 /* TOC */
 #toc {
@@ -689,7 +805,6 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
    ============================================================ */
 
 #content {
-  max-width: 780px;
   margin: 0 auto;
   padding: 40px 48px 80px;
   font-size: var(--reading-font-size, 16px);
@@ -1142,3 +1257,257 @@ button:focus-visible {
   outline-offset: 1px;
 }
 input:focus-visible { outline: none; }
+
+/* ============================================================
+   Edit mode
+   ============================================================ */
+
+#viewer { position: relative; }
+
+#editor-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  z-index: 10;
+  overflow: hidden;
+}
+#editor-wrapper.hidden { display: none !important; }
+
+#editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 48px;
+  height: 48px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#editor-breadcrumb-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  min-width: 0;
+  overflow: hidden;
+}
+#editor-breadcrumb-left svg { flex-shrink: 0; color: var(--text-3); }
+#editor-filename {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+
+.editor-toolbar-spacer { flex: 1; }
+
+#editor-unsaved {
+  font-size: 11.5px;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#editor-unsaved.saved { color: #5D9E72; }
+
+#btn-save-editor kbd {
+  font-family: inherit;
+  font-size: 10px;
+  opacity: 0.7;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+#editor-textarea {
+  flex: 1;
+  width: 100%;
+  background: var(--bg-1);
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.75;
+  border: none;
+  resize: none;
+  outline: none;
+  padding: 28px 48px;
+  tab-size: 2;
+  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+}
+#editor-textarea::selection { background: var(--selection-bg); }
+#editor-textarea::-webkit-scrollbar { width: 6px; }
+#editor-textarea::-webkit-scrollbar-track { background: transparent; }
+#editor-textarea::-webkit-scrollbar-thumb { background: var(--bg-4); border-radius: 3px; }
+
+/* ============================================================
+   Find & Replace bar
+   ============================================================ */
+
+#find-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+#find-bar.hidden { display: none !important; }
+
+.find-group { display: flex; align-items: center; gap: 5px; }
+
+.find-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--border-light);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+#find-input, #replace-input {
+  width: 180px;
+  padding: 4px 9px;
+  background: var(--bg-3);
+  border: 1px solid var(--border-light);
+  color: var(--text-0);
+  font-size: 12.5px;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--t);
+}
+#find-input:focus, #replace-input:focus { border-color: var(--accent); }
+#find-input::placeholder, #replace-input::placeholder { color: var(--text-3); }
+
+#find-status {
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 52px;
+  white-space: nowrap;
+}
+#find-status.no-match { color: var(--accent); }
+
+.find-close { margin-left: auto; }
+
+/* ============================================================
+   New file input
+   ============================================================ */
+
+.btn-new-file {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  transition: color var(--t), background var(--t);
+}
+.btn-new-file:hover { color: var(--accent); background: var(--bg-3); }
+
+#new-file-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px 7px;
+  border-bottom: 1px solid var(--accent-border);
+  background: var(--accent-dim);
+  flex-shrink: 0;
+}
+#new-file-row svg { color: var(--accent); flex-shrink: 0; }
+#new-file-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-0);
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  outline: none;
+}
+#new-file-input::placeholder { color: var(--text-3); }
+
+/* ============================================================
+   Breadcrumb action buttons (Edit + PDF)
+   ============================================================ */
+
+#file-breadcrumb-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-breadcrumb-action {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: var(--bg-3);
+  color: var(--text-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--t), color var(--t), border-color var(--t);
+}
+.btn-breadcrumb-action:hover { background: var(--bg-4); color: var(--text-0); }
+.btn-edit-file { color: var(--accent-light); border-color: var(--accent-border); background: var(--accent-dim); }
+.btn-edit-file:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-edit-file.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ============================================================
+   Print / Export PDF
+   ============================================================ */
+
+@media print {
+  /* Reset ALL theme variables to clean white/black — overrides both light and dark */
+  :root, :root[data-theme="light"], :root[data-theme="dark"] {
+    --bg-0: #fff; --bg-1: #fff; --bg-2: #f7f7f7; --bg-3: #f0f0f0; --bg-4: #e8e8e8;
+    --text-0: #000; --text-1: #111; --text-2: #333; --text-3: #666;
+    --border: #ddd; --border-light: #e4e4e4;
+    --accent: #333; --accent-light: #333; --accent-dim: #f5f5f5; --accent-border: #ccc;
+    --code-bg: #f5f5f5; --code-border: #ddd;
+    --link: #1a1a1a; --link-hover: #1a1a1a;
+    --selection-bg: #cce5ff;
+    --reading-font-size: 13px;
+  }
+
+  /* Hide all UI chrome */
+  #header, #sidebar, #resize-handle, #statusbar,
+  #file-breadcrumb, #reading-progress,
+  #command-palette, #settings-panel,
+  #editor-wrapper, #welcome { display: none !important; }
+
+  /* Fully unconstrain the layout — every ancestor must allow full height */
+  html, body  { height: auto !important; overflow: visible !important; background: #fff; }
+  #app        { height: auto !important; display: block !important; background: #fff; }
+  #main       { height: auto !important; display: block !important; overflow: visible !important; background: #fff; }
+  #viewer     { height: auto !important; overflow: visible !important; background: #fff; flex: none; }
+  #content-wrapper { display: block !important; position: static !important; background: #fff; }
+
+  #content { padding: 20px 32px; max-width: 100%; }
+
+  /* Don't break inside key blocks across pages */
+  #content .code-block,
+  #content blockquote,
+  #content table,
+  #content .table-wrapper,
+  #content img,
+  #content .frontmatter-panel { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Keep headings with the content that follows */
+  #content h1, #content h2, #content h3,
+  #content h4, #content h5, #content h6 { break-after: avoid; page-break-after: avoid; }
+
+  #content a { text-decoration: underline; border: none; }
+  #content .code-block .copy-btn { display: none !important; }
+}
