@@ -104,6 +104,14 @@ markdown-browser/
 ### v1.0.0
 - Initial release: read-only markdown viewer, hot reload, full-text search, TOC, syntax highlighting
 
+---
+## Story behind the Tool 
+Since the dawn of the claude code and codex, I have been working with only markdown files. All of my research, planning, working is in markdowns. I needed something to quickly view my markdown repo, search, edit etc. VS code is good but still have to preview the file, I needed something offline and quick. There are some extensions online but they were paid. So I built one. now its one of the always open tab on my chrome. Hope this helps some markdown guy too. 
+If it does, dont forget to give a shoutout to me on Twitter :P 
+
+abhikuchbhi.in
+
+---
 ## License
 
 MIT — see [LICENSE](LICENSE)
