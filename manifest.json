@@ -1,10 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Markdown Browser",
-  "version": "2.0.0",
-  "description": "Read, write, and organize local markdown files. Full-text search, in-browser editor, hot reload — 100% offline & private.",
+  "version": "2.1.0",
+  "description": "Read, write, and search local markdown files. Inline editing, wiki-links, callout blocks, full-text search — 100% offline & private.",
   "homepage_url": "https://markdownbrowser.abhikuchbhi.in",
   "permissions": ["storage", "tabs"],
+  "content_scripts": [
+    {
+      "matches": [
+        "file://**/*.md",
+        "file://**/*.mdx",
+        "file://**/*.markdown",
+        "file://**/*.mdown",
+        "file://**/*.mkd"
+      ],
+      "js": ["lib/highlighter.js", "lib/markdown.js", "content.js"],
+      "run_at": "document_end",
+      "all_frames": false
+    }
+  ],
   "action": {
     "default_title": "Markdown Browser",
     "default_icon": {

@@ -19,12 +19,6 @@
           </svg>
         </button>
         <div id="app-logo">Markdown<span>Browser</span></div>
-        <div id="folder-breadcrumb" class="hidden">
-          <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
-            <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
-          </svg>
-          <span id="folder-name">—</span>
-        </div>
       </div>
 
       <div id="header-center">
@@ -67,6 +61,20 @@
 
       <!-- Sidebar -->
       <aside id="sidebar">
+
+        <!-- Folder header row (shown when a folder is open) -->
+        <div id="folder-breadcrumb" class="hidden">
+          <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+            <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          </svg>
+          <span id="folder-name">—</span>
+          <button id="btn-change-folder" title="Close folder">
+            <svg width="9" height="9" viewBox="0 0 15 15" fill="none">
+              <path d="M2 2l11 11M13 2L2 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
         <div id="sidebar-tabs">
           <button class="sidebar-tab active" data-tab="files">
             <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
@@ -100,6 +108,12 @@
             <button id="btn-new-file" class="btn-new-file hidden" title="New file">
               <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
                 <path d="M7.5 2v11M2 7.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button id="btn-refresh-folder" class="btn-new-file hidden" title="Refresh folder">
+              <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+                <path d="M11 3.5A5 5 0 1 0 3 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M11 0.5v3.5H7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
@@ -199,21 +213,21 @@
                   <span class="step-num">3</span>
                   <div>
                     <strong>Edit &amp; save</strong>
-                    <p>Click <strong>Edit</strong> in the file breadcrumb (or press <kbd>⌘E</kbd>) to open the in-browser editor. Press <kbd>⌘S</kbd> to save. Use <kbd>⌘F</kbd> for find &amp; replace.</p>
+                    <p>Click <strong>Edit</strong> in the breadcrumb (or <kbd>⌘⇧E</kbd>) to edit blocks inline — click any paragraph, heading, or list to edit it in place. Use the <strong>▾</strong> dropdown for the full-screen editor (<kbd>⌘E</kbd>). Press <kbd>⌘S</kbd> to save.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">4</span>
                   <div>
-                    <strong>Create &amp; delete</strong>
-                    <p>Click the <strong>+</strong> button in the sidebar to create a new file. Hover any file to reveal the delete button. All file changes require your explicit permission.</p>
+                    <strong>Wiki-links &amp; callouts</strong>
+                    <p>Link between files with <code>[[filename]]</code> — a backlinks panel shows which files reference the current one. Use Obsidian-style callouts: <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code>, and more.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">5</span>
                   <div>
-                    <strong>Search</strong>
-                    <p>Click the search bar in the header (or press <kbd>⌘K</kbd>) to search filenames and content across your entire folder instantly.</p>
+                    <strong>Create, delete &amp; search</strong>
+                    <p>Click <strong>+</strong> in the sidebar to create a file. Hover any file to reveal the delete button. Press <kbd>⌘K</kbd> to search filenames and content across your entire folder instantly.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
@@ -231,9 +245,10 @@
               <h2>Keyboard shortcuts</h2>
               <div class="welcome-shortcuts-grid">
                 <kbd>⌘K</kbd>     <span>Search files and content</span>
-                <kbd>⌘E</kbd>     <span>Enter / exit edit mode</span>
-                <kbd>⌘S</kbd>     <span>Save file (edit mode)</span>
-                <kbd>⌘F</kbd>     <span>Find &amp; replace (edit mode)</span>
+                <kbd>⌘⇧E</kbd>   <span>Inline edit mode</span>
+                <kbd>⌘E</kbd>     <span>Full editor mode</span>
+                <kbd>⌘S</kbd>     <span>Save file</span>
+                <kbd>⌘F</kbd>     <span>Find &amp; replace (full editor)</span>
                 <kbd>⌘[</kbd>     <span>Previous file</span>
                 <kbd>⌘]</kbd>     <span>Next file</span>
                 <kbd>⌘B</kbd>     <span>Toggle sidebar</span>
@@ -245,9 +260,11 @@
             <div class="welcome-section">
               <h2>Features</h2>
               <ul class="welcome-features">
-                <li><strong>In-browser editor</strong> — edit files directly, save with <kbd style="font-size:10px;background:var(--bg-3);border:1px solid var(--border-light);border-radius:3px;padding:1px 4px">⌘S</kbd></li>
+                <li><strong>Inline editing</strong> — click any block in the preview to edit it in place (⌘⇧E)</li>
+                <li><strong>Full-screen editor</strong> — edit files directly with find &amp; replace, save with ⌘S</li>
+                <li><strong>Wiki-links</strong> — <code>[[filename]]</code> cross-links with a backlinks panel per file</li>
+                <li><strong>Callout blocks</strong> — Obsidian-style <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code> and more</li>
                 <li><strong>Create &amp; delete files</strong> — manage your markdown folder without leaving the app</li>
-                <li><strong>Find &amp; Replace</strong> — search and replace within the editor</li>
                 <li><strong>Export to PDF</strong> — clean, print-ready output</li>
                 <li>Full <strong>GitHub Flavored Markdown</strong> — tables, task lists, front matter, code blocks</li>
                 <li><strong>Syntax highlighting</strong> for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON</li>
@@ -286,16 +303,40 @@
                 </svg>
                 PDF
               </button>
-              <button id="btn-edit" class="btn-breadcrumb-action btn-edit-file" title="Edit file (⌘E)">
-                <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
-                  <path d="M11.5 1L14 3.5 5 12.5H2.5V10L11.5 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
-                  <path d="M9.5 3L12 5.5" stroke="currentColor" stroke-width="1.3"/>
-                </svg>
-                Edit
-              </button>
+              <div id="edit-split-btn" class="hidden">
+                <button id="btn-inline-edit" class="btn-breadcrumb-action btn-edit-file" title="Inline edit (⌘⇧E)">
+                  <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                    <path d="M1 11.5V14h2.5l7-7L8 4.5l-7 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
+                    <path d="M10.5 3l1.5-1.5L14 3.5 12.5 5 10.5 3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
+                  </svg>
+                  Edit
+                </button>
+                <button id="btn-edit-caret" class="btn-edit-caret" title="More edit options">
+                  <svg width="9" height="9" viewBox="0 0 15 15" fill="none">
+                    <path d="M3 5.5l4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div id="edit-dropdown" class="hidden">
+                  <button id="btn-edit" class="edit-dropdown-item">
+                    <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+                      <path d="M11.5 1L14 3.5 5 12.5H2.5V10L11.5 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
+                      <path d="M9.5 3L12 5.5" stroke="currentColor" stroke-width="1.3"/>
+                    </svg>
+                    Full editor
+                    <kbd>⌘E</kbd>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+          <div id="file-meta">
+            <span id="status-words"></span>
+            <span class="meta-sep" id="meta-words-sep">·</span>
+            <span id="status-readtime"></span>
+            <span id="status-modified"></span>
+          </div>
           <article id="content" class="markdown-body"></article>
+          <div id="backlinks-panel"></div>
         </div>
 
         <!-- Editor -->
@@ -352,19 +393,9 @@
       </main>
     </div>
 
-    <!-- Status bar -->
-    <div id="statusbar">
-      <span id="status-file"></span>
-      <span class="status-sep">·</span>
-      <span id="status-words"></span>
-      <span class="status-sep">·</span>
-      <span id="status-readtime"></span>
-      <div id="status-right">
-        <span id="status-modified"></span>
-        <span class="status-sep">·</span>
-        <span id="status-author"><a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a></span>
-      </div>
-    </div>
+
+    <!-- Bottom-right credit -->
+    <div id="site-credit"><a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a></div>
 
     <!-- Command palette -->
     <div id="command-palette" class="hidden" role="dialog" aria-modal="true">

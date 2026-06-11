@@ -17,14 +17,20 @@ const state = {
   hotReload: true,
   reloadInterval: null,
   reloadMs: 1000,
+  folderScanInterval: null,
   searchIndex: [],         // [{ path, name, content }]
   indexBuilt: false,
   recent: [],
   editMode: false,
   editUnsaved: false,
+  inlineEditMode: false,
+  sourceBlocks: [],
+  frontMatterRaw: '',
+  activeBlockEditor: null,
+  inlineUnsaved: false,
   settings: {
     fontSize: 16,
-    readingWidth: '100%',
+    readingWidth: '960',
     sidebarCollapsed: false,
     fontFamily: 'sans',
     reloadInterval: 1000,
@@ -46,6 +52,7 @@ const dom = {
   btnSettings:      $('btn-settings'),
   folderBreadcrumb: $('folder-breadcrumb'),
   folderName:       $('folder-name'),
+  btnChangeFolder:  $('btn-change-folder'),
   filePathDisplay:  $('file-path-display'),
   fileBreadcrumb:   $('file-breadcrumb'),
   filterInput:      $('filter-input'),
@@ -56,10 +63,8 @@ const dom = {
   contentWrapper:   $('content-wrapper'),
   content:          $('content'),
   readingProgress:  $('reading-progress'),
-  statusFile:       $('status-file'),
   statusWords:      $('status-words'),
   statusReadtime:   $('status-readtime'),
-  statusLive:       $('status-live-indicator'),
   statusModified:   $('status-modified'),
   reloadDot:        $('reload-dot'),
   // Command palette
@@ -81,6 +86,11 @@ const dom = {
   resizeHandle:     $('resize-handle'),
   // Edit mode
   btnEdit:          $('btn-edit'),
+  btnInlineEdit:    $('btn-inline-edit'),
+  editSplitBtn:     $('edit-split-btn'),
+  btnEditCaret:     $('btn-edit-caret'),
+  editDropdown:     $('edit-dropdown'),
+  fileMeta:         $('file-meta'),
   editorWrapper:    $('editor-wrapper'),
   editorFilename:   $('editor-filename'),
   editorUnsaved:    $('editor-unsaved'),
@@ -97,12 +107,16 @@ const dom = {
   btnReplaceOne:    $('btn-replace-one'),
   btnReplaceAll:    $('btn-replace-all'),
   btnCloseFindBar:  $('btn-close-find'),
-  // New file
+  // New file / folder controls
   btnNewFile:       $('btn-new-file'),
+  btnRefreshFolder: $('btn-refresh-folder'),
+  btnOpenFile:      $('btn-open-file'),
   newFileRow:       $('new-file-row'),
   newFileInput:     $('new-file-input'),
   // Export
   btnExportPdf:     $('btn-export-pdf'),
+  // Backlinks
+  backlinksPanel:   $('backlinks-panel'),
 };
 
 // ── Init ───────────────────────────────────────────────────────
@@ -143,6 +157,8 @@ function applySettings() {
   const widthVal = s.readingWidth === '100%' ? '100%' : s.readingWidth + 'px';
   dom.content.style.maxWidth = widthVal;
   if (dom.fileBreadcrumb) dom.fileBreadcrumb.style.maxWidth = widthVal;
+  if (dom.fileMeta) dom.fileMeta.style.maxWidth = widthVal;
+  if (dom.backlinksPanel) dom.backlinksPanel.style.maxWidth = widthVal;
   dom.sidebar.classList.toggle('collapsed', !!s.sidebarCollapsed);
   const fontMap = { sans: 'var(--font-reading-sans)', serif: 'var(--font-serif)', mono: 'var(--font-mono)' };
   document.documentElement.style.setProperty('--reading-font', fontMap[s.fontFamily] || fontMap.sans);
@@ -265,6 +281,7 @@ async function mountFolder(handle) {
   dom.folderName.textContent = handle.name;
   dom.folderBreadcrumb.classList.remove('hidden');
   dom.btnNewFile.classList.remove('hidden');
+  dom.btnRefreshFolder.classList.remove('hidden');
 
   state.files.clear();
   state.searchIndex = [];
@@ -278,18 +295,253 @@ async function mountFolder(handle) {
   switchSidebarTab('files');
 
   buildSearchIndex();
+  startFolderScan();
 }
 
-async function scanDirectory(dirHandle, prefix) {
+async function resetFolder() {
+  stopHotReload();
+  stopFolderScan();
+
+  // Clear persisted handle so it won't restore on next load
+  try { await idbSet('folderHandle', null); } catch (_) {}
+
+  if (state.editMode) {
+    state.editMode = false;
+    state.editUnsaved = false;
+    dom.findBar.classList.add('hidden');
+    dom.editorWrapper.classList.add('hidden');
+  }
+  if (state.inlineEditMode) {
+    state.inlineEditMode = false;
+    state.inlineUnsaved = false;
+    state.activeBlockEditor = null;
+    state.sourceBlocks = [];
+    state.frontMatterRaw = '';
+    dom.content.classList.remove('inline-edit-active');
+    dom.btnInlineEdit.classList.remove('active');
+  }
+
+  state.folderHandle = null;
+  state.folderName = '';
+  state.files.clear();
+  state.tree = null;
+  state.searchIndex = [];
+  state.indexBuilt = false;
+  state.currentPath = null;
+  state.currentHandle = null;
+  state.currentLastModified = 0;
+
+  dom.folderBreadcrumb.classList.add('hidden');
+  dom.btnNewFile.classList.add('hidden');
+  dom.btnRefreshFolder.classList.add('hidden');
+  dom.contentWrapper.classList.add('hidden');
+  dom.editSplitBtn.classList.add('hidden');
+  dom.filePathDisplay.textContent = '';
+  dom.filterInput.value = '';
+  dom.statusWords.textContent = '';
+  dom.statusReadtime.textContent = '';
+  dom.statusModified.textContent = '';
+  dom.toc.innerHTML = '<div class="empty-state"><p>Open a file to see its contents</p></div>';
+
+  showNoFolderState();
+
+  dom.welcome.style.display = '';
+  dom.welcome.classList.add('visible');
+}
+
+function showNoFolderState() {
+  dom.fileTree.innerHTML = `
+    <div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 15 15" fill="none" style="opacity:0.35">
+        <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1" fill="none"/>
+      </svg>
+      <p>No folder open yet</p>
+      <button id="btn-open" class="btn-open-sidebar">
+        <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+          <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        </svg>
+        Open Folder
+      </button>
+    </div>
+  `;
+  document.getElementById('btn-open')?.addEventListener('click', openFolder);
+}
+
+async function scanDirectory(dirHandle, prefix, targetMap = state.files) {
   for await (const [name, entry] of dirHandle.entries()) {
     const path = prefix ? `${prefix}/${name}` : name;
     if (entry.kind === 'directory') {
       if (!name.startsWith('.') && name !== 'node_modules' && name !== '.git') {
-        await scanDirectory(entry, path);
+        await scanDirectory(entry, path, targetMap);
       }
     } else if (/\.(md|mdx|markdown|mdown|mkd|txt)$/i.test(name)) {
-      state.files.set(path, { handle: entry, name, dir: prefix, lastModified: 0 });
+      targetMap.set(path, { handle: entry, name, dir: prefix, lastModified: 0 });
     }
+  }
+}
+
+// ── Single file opening ────────────────────────────────────────
+
+async function openFileHandle() {
+  try {
+    const [handle] = await window.showOpenFilePicker({
+      types: [{ description: 'Markdown files', accept: { 'text/markdown': ['.md', '.mdx', '.markdown', '.mdown', '.mkd', '.txt'] } }],
+      multiple: false,
+    });
+    await openSingleFile(handle);
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('Failed to open file:', e);
+  }
+}
+
+async function openSingleFile(handle) {
+  const name = handle.name;
+  const path = name;
+
+  stopFolderScan();
+  state.folderHandle = null;
+  state.folderName = '';
+  dom.folderName.textContent = '';
+  dom.folderBreadcrumb.classList.add('hidden');
+  dom.btnNewFile.classList.add('hidden');
+  dom.btnRefreshFolder.classList.add('hidden');
+
+  state.files.clear();
+  state.files.set(path, { handle, name, dir: '', lastModified: 0 });
+  state.searchIndex = [];
+  state.indexBuilt = false;
+  state.tree = buildTree();
+  renderFileTree(state.tree);
+  switchSidebarTab('files');
+
+  await openFile(path);
+}
+
+// ── Folder refresh ─────────────────────────────────────────────
+
+let isCheckingFolder = false;
+
+async function refreshFolder() {
+  if (!state.folderHandle || isCheckingFolder) return;
+  isCheckingFolder = true;
+  dom.btnRefreshFolder.disabled = true;
+  try {
+    const perm = await state.folderHandle.queryPermission({ mode: 'read' });
+    if (perm !== 'granted') {
+      const newPerm = await state.folderHandle.requestPermission({ mode: 'read' });
+      if (newPerm !== 'granted') return;
+    }
+    const newFiles = new Map();
+    await scanDirectory(state.folderHandle, '', newFiles);
+
+    const currentPaths = new Set(state.files.keys());
+    const newPaths = new Set(newFiles.keys());
+    const added = [...newPaths].filter(p => !currentPaths.has(p));
+    const removed = [...currentPaths].filter(p => !newPaths.has(p));
+
+    state.files.clear();
+    for (const [p, info] of newFiles) state.files.set(p, info);
+
+    if (state.currentPath && removed.includes(state.currentPath)) {
+      state.currentPath = null;
+      state.currentHandle = null;
+      stopHotReload();
+      dom.contentWrapper.classList.add('hidden');
+      dom.editSplitBtn.classList.add('hidden');
+      dom.welcome.style.display = '';
+      dom.welcome.classList.add('visible');
+      dom.statusWords.textContent = '';
+      dom.statusReadtime.textContent = '';
+    }
+
+    state.tree = buildTree();
+    renderFileTree(state.tree, dom.filterInput.value);
+    if (state.currentPath) updateActiveTreeItem(state.currentPath);
+
+    state.searchIndex = state.searchIndex.filter(e => !removed.includes(e.path));
+    for (const p of added) {
+      const info = state.files.get(p);
+      try {
+        const file = await info.handle.getFile();
+        const content = await file.text();
+        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase(), rawContent: content });
+      } catch (_) {
+        state.searchIndex.push({ path: p, name: info.name, content: '', rawContent: '' });
+      }
+    }
+
+    dom.statusModified.textContent = 'Folder refreshed';
+    setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('Refresh failed:', e);
+  } finally {
+    isCheckingFolder = false;
+    dom.btnRefreshFolder.disabled = false;
+  }
+}
+
+// ── Folder structure hot reload ─────────────────────────────────
+
+function startFolderScan() {
+  stopFolderScan();
+  if (!state.hotReload || !state.folderHandle) return;
+  state.folderScanInterval = setInterval(checkFolderChanges, 5000);
+}
+
+function stopFolderScan() {
+  if (state.folderScanInterval) { clearInterval(state.folderScanInterval); state.folderScanInterval = null; }
+}
+
+async function checkFolderChanges() {
+  if (!state.folderHandle || isCheckingFolder) return;
+  isCheckingFolder = true;
+  try {
+    const newFiles = new Map();
+    await scanDirectory(state.folderHandle, '', newFiles);
+
+    const currentPaths = new Set(state.files.keys());
+    const newPaths = new Set(newFiles.keys());
+    const added = [...newPaths].filter(p => !currentPaths.has(p));
+    const removed = [...currentPaths].filter(p => !newPaths.has(p));
+
+    if (!added.length && !removed.length) return;
+
+    for (const p of removed) state.files.delete(p);
+    for (const p of added) state.files.set(p, newFiles.get(p));
+
+    if (state.currentPath && removed.includes(state.currentPath)) {
+      state.currentPath = null;
+      state.currentHandle = null;
+      stopHotReload();
+      dom.contentWrapper.classList.add('hidden');
+      dom.editSplitBtn.classList.add('hidden');
+      dom.welcome.style.display = '';
+      dom.welcome.classList.add('visible');
+      dom.statusWords.textContent = '';
+      dom.statusReadtime.textContent = '';
+      dom.statusModified.textContent = 'File deleted externally';
+      setTimeout(() => { dom.statusModified.textContent = ''; }, 3000);
+    }
+
+    state.tree = buildTree();
+    renderFileTree(state.tree, dom.filterInput.value);
+    if (state.currentPath) updateActiveTreeItem(state.currentPath);
+
+    state.searchIndex = state.searchIndex.filter(e => !removed.includes(e.path));
+    for (const p of added) {
+      const info = state.files.get(p);
+      try {
+        const file = await info.handle.getFile();
+        const content = await file.text();
+        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase(), rawContent: content });
+      } catch (_) {
+        state.searchIndex.push({ path: p, name: info.name, content: '', rawContent: '' });
+      }
+    }
+  } catch (e) {
+    if (e.name === 'NotAllowedError') stopFolderScan();
+  } finally {
+    isCheckingFolder = false;
   }
 }
 
@@ -446,10 +698,9 @@ async function deleteFile(path) {
       state.currentPath = null;
       state.currentHandle = null;
       dom.contentWrapper.classList.add('hidden');
-      dom.btnEdit.classList.add('hidden');
+      dom.editSplitBtn.classList.add('hidden');
       dom.welcome.style.display = '';
       dom.welcome.classList.add('visible');
-      dom.statusFile.textContent = '';
       dom.statusWords.textContent = '';
       dom.statusReadtime.textContent = '';
     }
@@ -468,7 +719,7 @@ async function openFile(path) {
 
   state.currentPath = path;
   state.currentHandle = info.handle;
-  dom.btnEdit.classList.remove('hidden');
+  dom.editSplitBtn.classList.remove('hidden');
 
   try {
     const file = await info.handle.getFile();
@@ -488,12 +739,33 @@ function renderDocument(path, name, text, preserveScroll = false) {
   const viewer = document.getElementById('viewer');
   const savedScroll = preserveScroll ? viewer.scrollTop : 0;
 
-  const { html, headings } = Markdown.parse(text);
+  const { html, headings, blocks, frontMatterRaw } = Markdown.parse(text);
+  state.sourceBlocks = blocks || [];
+  state.frontMatterRaw = frontMatterRaw || '';
 
   dom.welcome.classList.remove('visible');
   dom.welcome.style.display = 'none';  // override in case no folder was opened yet
   dom.contentWrapper.classList.remove('hidden');
   dom.content.innerHTML = html;
+
+  // Inline edit mode — re-attach block handlers after each render
+  if (state.inlineEditMode) attachAllBlockHandlers();
+
+  // Wiki-link click handlers
+  dom.content.querySelectorAll('a.wiki-link').forEach(a => {
+    const target = a.dataset.wikilink;
+    const resolved = resolveWikiLink(target);
+    if (resolved) {
+      a.addEventListener('click', e => { e.preventDefault(); openFile(resolved); });
+    } else {
+      a.classList.add('unresolved');
+      a.title = `"${target}" not found in folder`;
+      a.addEventListener('click', e => e.preventDefault());
+    }
+  });
+
+  // Backlinks
+  renderBacklinks(path);
 
   // Copy buttons
   dom.content.querySelectorAll('.copy-btn').forEach(btn => {
@@ -565,7 +837,6 @@ function updateScrollSpy() {
 function updateStatusBar(name, text) {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   const mins = Math.max(1, Math.round(words / 200));
-  dom.statusFile.textContent = name;
   dom.statusWords.textContent = words.toLocaleString() + ' words';
   dom.statusReadtime.textContent = mins + ' min read';
 }
@@ -574,11 +845,9 @@ function updateLiveIndicator() {
   if (state.hotReload) {
     dom.reloadDot.className = 'dot dot-live';
     dom.btnReloadToggle.title = 'Hot reload on — click to disable';
-    dom.statusLive.innerHTML = '<span class="dot dot-live" title="Hot reload active"></span>';
   } else {
     dom.reloadDot.className = 'dot dot-off';
     dom.btnReloadToggle.title = 'Hot reload off — click to enable';
-    dom.statusLive.innerHTML = '';
   }
 }
 
@@ -610,8 +879,8 @@ async function checkForChanges() {
     }
   } catch (e) {
     if (e.name === 'NotAllowedError') {
-      // Permission expired — stop polling and indicate to user
       stopHotReload();
+      stopFolderScan();
       state.hotReload = false;
       updateLiveIndicator();
       dom.statusModified.textContent = 'Live reload paused — re-open folder to resume';
@@ -636,6 +905,7 @@ async function buildSearchIndex() {
     }
   }
   state.indexBuilt = true;
+  if (state.currentPath) renderBacklinks(state.currentPath);
 }
 
 // ── Command palette ────────────────────────────────────────────
@@ -860,6 +1130,7 @@ function initResizeHandle() {
 
 async function enterEditMode() {
   if (!state.currentHandle) return;
+  if (state.inlineEditMode) exitInlineEditMode(true);
   try {
     const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
     if (perm !== 'granted') return;
@@ -882,6 +1153,7 @@ async function enterEditMode() {
   dom.contentWrapper.classList.add('hidden');
   dom.editorWrapper.classList.remove('hidden');
   dom.btnEdit.classList.add('active');
+  dom.btnInlineEdit.classList.add('active');
   dom.editorTextarea.focus();
 }
 
@@ -895,6 +1167,7 @@ function exitEditMode() {
   dom.editorWrapper.classList.add('hidden');
   dom.contentWrapper.classList.remove('hidden');
   dom.btnEdit.classList.remove('active');
+  dom.btnInlineEdit.classList.remove('active');
   if (state.hotReload) startHotReload();
   return true;
 }
@@ -1084,6 +1357,232 @@ function markEditorUnsaved() {
   dom.editorUnsaved.classList.remove('hidden', 'saved');
 }
 
+// ── Inline edit mode ───────────────────────────────────────────
+
+function enterInlineEditMode() {
+  if (state.editMode) exitEditMode();
+  if (!state.currentPath) return;
+  state.inlineEditMode = true;
+  dom.content.classList.add('inline-edit-active');
+  dom.btnInlineEdit.classList.add('active');
+  attachAllBlockHandlers();
+}
+
+function exitInlineEditMode(skipConfirm = false) {
+  if (state.activeBlockEditor) commitBlockEdit();
+  if (state.inlineUnsaved && !skipConfirm) {
+    if (!confirm('You have unsaved inline edits. Discard them?')) return false;
+  }
+  state.inlineEditMode = false;
+  state.inlineUnsaved = false;
+  dom.content.classList.remove('inline-edit-active');
+  dom.btnInlineEdit.classList.remove('active');
+  return true;
+}
+
+function attachAllBlockHandlers() {
+  dom.content.querySelectorAll('[data-bi]').forEach(el => {
+    attachBlockHandler(el, parseInt(el.dataset.bi, 10));
+  });
+}
+
+function attachBlockHandler(el, bi) {
+  el.addEventListener('click', function onBlockClick(e) {
+    if (!state.inlineEditMode) return;
+    e.stopPropagation();
+    if (state.activeBlockEditor?.el === el) return;
+    if (state.activeBlockEditor) commitBlockEdit();
+    activateBlockEdit(bi, el);
+  }, { once: true });
+}
+
+function activateBlockEdit(bi, el) {
+  const raw = state.sourceBlocks[bi] ?? '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'block-editor-wrap';
+  wrap.dataset.bi = bi;
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'block-editor';
+  textarea.value = raw;
+  textarea.spellcheck = false;
+  textarea.setAttribute('autocomplete', 'off');
+  textarea.setAttribute('autocorrect', 'off');
+  textarea.setAttribute('autocapitalize', 'off');
+
+  const autoResize = () => {
+    textarea.style.height = 'auto';
+    textarea.style.height = (textarea.scrollHeight + 2) + 'px';
+  };
+
+  textarea.addEventListener('input', () => {
+    autoResize();
+    state.inlineUnsaved = true;
+    state.sourceBlocks[bi] = textarea.value;
+    dom.statusModified.textContent = '● Unsaved';
+  });
+
+  textarea.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.preventDefault(); commitBlockEdit(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveInlineEdits(); }
+  });
+
+  textarea.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (state.activeBlockEditor?.textarea === textarea) commitBlockEdit();
+    }, 120);
+  });
+
+  wrap.appendChild(textarea);
+  el.replaceWith(wrap);
+  state.activeBlockEditor = { bi, el, textarea, wrap };
+
+  requestAnimationFrame(() => { autoResize(); textarea.focus(); });
+}
+
+function commitBlockEdit() {
+  const editor = state.activeBlockEditor;
+  if (!editor) return;
+
+  const { bi, textarea, wrap } = editor;
+  const newRaw = textarea.value;
+  state.sourceBlocks[bi] = newRaw;
+  state.activeBlockEditor = null;
+
+  if (!newRaw.trim()) { wrap.remove(); return; }
+
+  const { html } = Markdown.parse(newRaw, false);
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html.trim();
+
+  // Tag first element with data-bi so it stays clickable
+  const firstEl = tempDiv.firstElementChild;
+  if (firstEl) {
+    firstEl.dataset.bi = bi;
+    attachBlockHandler(firstEl, bi);
+  }
+
+  // Reattach copy-btn and wiki-link handlers in the new content
+  tempDiv.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const code = btn.dataset.code || btn.closest('.code-block')?.querySelector('code')?.innerText || '';
+      await navigator.clipboard.writeText(code);
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    });
+  });
+  tempDiv.querySelectorAll('a.wiki-link').forEach(a => {
+    const target = a.dataset.wikilink;
+    const resolved = resolveWikiLink(target);
+    if (resolved) {
+      a.addEventListener('click', e => { e.preventDefault(); openFile(resolved); });
+    } else {
+      a.classList.add('unresolved');
+      a.addEventListener('click', e => e.preventDefault());
+    }
+  });
+
+  const frag = document.createDocumentFragment();
+  while (tempDiv.firstChild) frag.appendChild(tempDiv.firstChild);
+  wrap.replaceWith(frag);
+}
+
+function reconstructMarkdown() {
+  const body = state.sourceBlocks.join('\n\n');
+  return state.frontMatterRaw ? state.frontMatterRaw + '\n\n' + body : body;
+}
+
+async function saveInlineEdits() {
+  if (!state.currentHandle || !state.inlineEditMode) return;
+  if (state.activeBlockEditor) commitBlockEdit();
+  if (!state.inlineUnsaved) return;
+
+  try {
+    const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') return;
+
+    const content = reconstructMarkdown();
+    const writable = await state.currentHandle.createWritable();
+    await writable.write(content);
+    await writable.close();
+
+    const file = await state.currentHandle.getFile();
+    state.currentLastModified = file.lastModified;
+    state.inlineUnsaved = false;
+    dom.statusModified.textContent = 'Saved';
+    setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
+  } catch (e) {
+    console.error('Failed to save inline edits:', e);
+    alert('Failed to save: ' + e.message);
+  }
+}
+
+// ── Wiki-links ─────────────────────────────────────────────────
+
+function resolveWikiLink(name) {
+  const q = name.toLowerCase().trim();
+  for (const [path, info] of state.files) {
+    if (info.name.toLowerCase() === q) return path;
+  }
+  // Match by stem (name without extension)
+  for (const [path, info] of state.files) {
+    const stem = info.name.replace(/\.(md|mdx|markdown|mdown|mkd|txt)$/i, '').toLowerCase();
+    if (stem === q) return path;
+  }
+  return null;
+}
+
+// ── Backlinks ──────────────────────────────────────────────────
+
+function renderBacklinks(currentPath) {
+  const panel = dom.backlinksPanel;
+  if (!panel) return;
+  if (!state.indexBuilt || !currentPath) { panel.innerHTML = ''; return; }
+
+  const info = state.files.get(currentPath);
+  if (!info) { panel.innerHTML = ''; return; }
+
+  const stem = info.name.replace(/\.(md|mdx|markdown|mdown|mkd|txt)$/i, '');
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(`\\[\\[(?:${esc(stem)}|${esc(info.name)})(?:\\|[^\\]]+)?\\]\\]`, 'i');
+
+  const matches = [];
+  for (const entry of state.searchIndex) {
+    if (entry.path === currentPath) continue;
+    if (re.test(entry.rawContent)) matches.push({ path: entry.path, name: entry.name });
+  }
+
+  if (!matches.length) { panel.innerHTML = ''; return; }
+
+  panel.innerHTML = `
+    <div class="backlinks-section">
+      <div class="backlinks-title">
+        <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
+          <path d="M4.5 8.5l-3-3 3-3M1.5 5.5h8a4 4 0 014 4v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        ${matches.length} backlink${matches.length !== 1 ? 's' : ''}
+      </div>
+      <div class="backlinks-list">
+        ${matches.map(m => `
+          <div class="backlink-item" data-path="${escAttr(m.path)}">
+            <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
+              <path d="M4 1h5.5L12 3.5V13a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+              <path d="M8 1v3h3" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+            <span>${escHtml(m.name)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  panel.querySelectorAll('.backlink-item').forEach(el => {
+    el.addEventListener('click', () => openFile(el.dataset.path));
+  });
+}
+
 // ── Export PDF ─────────────────────────────────────────────────
 
 function exportPDF() {
@@ -1093,11 +1592,29 @@ function exportPDF() {
 // ── Event bindings ─────────────────────────────────────────────
 
 function bindEvents() {
-  // Open folder
+  // Open / change / refresh folder
   dom.btnOpen.addEventListener('click', openFolder);
+  dom.btnChangeFolder.addEventListener('click', resetFolder);
+  if (dom.btnOpenFile) dom.btnOpenFile.addEventListener('click', openFileHandle);
+  dom.btnRefreshFolder.addEventListener('click', refreshFolder);
 
-  // Edit mode
+  // Edit split button: main click = inline edit, caret = dropdown
+  dom.btnInlineEdit.addEventListener('click', () => {
+    dom.editDropdown.classList.add('hidden');
+    if (state.inlineEditMode) exitInlineEditMode();
+    else enterInlineEditMode();
+  });
+  dom.btnEditCaret.addEventListener('click', e => {
+    e.stopPropagation();
+    dom.editDropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click', () => {
+    dom.editDropdown.classList.add('hidden');
+  });
+
+  // Full editor (inside dropdown)
   dom.btnEdit.addEventListener('click', () => {
+    dom.editDropdown.classList.add('hidden');
     if (state.editMode) exitEditMode();
     else enterEditMode();
   });
@@ -1170,15 +1687,14 @@ function bindEvents() {
   dom.btnReloadToggle.addEventListener('click', async () => {
     state.hotReload = !state.hotReload;
     if (state.hotReload && state.folderHandle) {
-      // Re-request permission on user gesture in case it expired
       try {
         const perm = await state.folderHandle.requestPermission({ mode: 'read' });
         if (perm !== 'granted') { state.hotReload = false; }
       } catch (_) {}
     }
     updateLiveIndicator();
-    if (state.hotReload) startHotReload();
-    else stopHotReload();
+    if (state.hotReload) { startHotReload(); startFolderScan(); }
+    else { stopHotReload(); stopFolderScan(); }
   });
 
   // Settings
@@ -1234,7 +1750,16 @@ function bindEvents() {
     if (mod && e.key === ']') { e.preventDefault(); navigateFile(1); return; }
     if (mod && e.key === '[') { e.preventDefault(); navigateFile(-1); return; }
     if (mod && e.key === 'b') { e.preventDefault(); toggleSidebar(); return; }
-    if (mod && e.key === 's') { e.preventDefault(); saveFile(); return; }
+    if (mod && e.key === 's') {
+      e.preventDefault();
+      if (state.inlineEditMode) saveInlineEdits(); else saveFile();
+      return;
+    }
+    if (mod && e.shiftKey && e.key === 'E' && state.currentPath) {
+      e.preventDefault();
+      if (state.inlineEditMode) exitInlineEditMode(); else enterInlineEditMode();
+      return;
+    }
     if (mod && e.key === 'e' && state.currentPath) {
       e.preventDefault();
       if (state.editMode) exitEditMode(); else enterEditMode();
