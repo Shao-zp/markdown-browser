@@ -116,7 +116,9 @@ body {
   flex-shrink: 0;
   gap: 12px;
   user-select: none;
+  transition: opacity 200ms ease;
 }
+#header.sticky-scrolled { opacity: 0.6; }
 
 #header-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
@@ -215,6 +217,26 @@ body {
 #btn-change-folder:hover { opacity: 1; color: var(--text-1); background: var(--bg-3); }
 
 /* Breadcrumb inside viewer */
+/* ============================================================
+   Sticky content header (breadcrumb + meta)
+   ============================================================ */
+
+#content-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-1);
+  transition: opacity 200ms ease;
+  border-bottom: 1px solid var(--border);
+}
+#content-header.hidden {
+  display: none !important;
+}
+#content-header.sticky-scrolled {
+  opacity: 0.6;
+}
+
+/* File breadcrumb inside sticky header */
 #file-breadcrumb {
   display: flex;
   align-items: center;
@@ -1799,7 +1821,7 @@ input:focus-visible { outline: none; }
 
   /* Hide all UI chrome */
   #header, #sidebar, #resize-handle,
-  #file-breadcrumb, #file-meta, #reading-progress,
+  #content-header, #file-breadcrumb, #file-meta, #reading-progress,
   #command-palette, #settings-panel,
   #editor-wrapper, #welcome { display: none !important; }
 

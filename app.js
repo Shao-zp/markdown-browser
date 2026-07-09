@@ -117,6 +117,8 @@ const dom = {
   btnExportPdf:     $('btn-export-pdf'),
   // Backlinks
   backlinksPanel:   $('backlinks-panel'),
+  // Sticky content header
+  contentHeader:    $('content-header'),
 };
 
 // ── Init ───────────────────────────────────────────────────────
@@ -336,6 +338,7 @@ async function resetFolder() {
   dom.btnNewFile.classList.add('hidden');
   dom.btnRefreshFolder.classList.add('hidden');
   dom.contentWrapper.classList.add('hidden');
+  dom.contentHeader.classList.add('hidden');
   dom.editSplitBtn.classList.add('hidden');
   dom.filePathDisplay.textContent = '';
   dom.filterInput.value = '';
@@ -747,6 +750,7 @@ function renderDocument(path, name, text, preserveScroll = false) {
   dom.welcome.classList.remove('visible');
   dom.welcome.style.display = 'none';  // override in case no folder was opened yet
   dom.contentWrapper.classList.remove('hidden');
+  dom.contentHeader.classList.remove('hidden');
   dom.content.innerHTML = html;
 
   // Inline edit mode — re-attach block handlers after each render
@@ -822,6 +826,13 @@ function renderTOC(headings) {
 // Scroll spy
 function updateScrollSpy() {
   const viewer = document.getElementById('viewer');
+
+  // Sticky header transparency — reduce opacity when scrolled down
+  const scrollTop = viewer.scrollTop;
+  const isScrolled = scrollTop > 0;
+  dom.contentHeader?.classList.toggle('sticky-scrolled', isScrolled);
+  document.getElementById('header')?.classList.toggle('sticky-scrolled', isScrolled);
+
   const headings = dom.content.querySelectorAll('h1,h2,h3,h4,h5,h6');
   if (!headings.length) return;
 
@@ -1181,6 +1192,7 @@ function exitEditMode() {
   state.editUnsaved = false;
   dom.editorWrapper.classList.add('hidden');
   dom.contentWrapper.classList.remove('hidden');
+  dom.contentHeader.classList.remove('hidden');
   dom.btnEdit.classList.remove('active');
   dom.btnInlineEdit.classList.remove('active');
   if (state.hotReload) startHotReload();
