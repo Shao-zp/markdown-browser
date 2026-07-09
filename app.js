@@ -836,7 +836,6 @@ function updateScrollSpy() {
   const headings = dom.content.querySelectorAll('h1,h2,h3,h4,h5,h6');
   if (!headings.length) return;
 
-  const scrollTop = viewer.scrollTop;
   let active = headings[0];
 
   for (const h of headings) {
