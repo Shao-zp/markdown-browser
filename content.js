@@ -95,6 +95,15 @@
     });
   });
 
+  // Mermaid diagrams
+  if (typeof mermaid !== 'undefined') {
+    requestAnimationFrame(() => {
+      try {
+        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+      } catch (_) {}
+    });
+  }
+
   // Apply the user's saved theme (default: dark)
   chrome.storage.local.get('settings', (data) => {
     const theme = data?.settings?.theme ?? 'dark';

@@ -12,7 +12,7 @@
     <!-- Header -->
     <header id="header">
       <div id="header-left">
-        <button id="btn-toggle-sidebar" class="btn-icon" title="Toggle sidebar (⌘B)">
+        <button id="btn-toggle-sidebar" class="btn-icon" data-i18n-title="header.toggleSidebar" title="Toggle sidebar (⌘B)">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
             <rect x="1.5" y="1.5" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.2"/>
             <path d="M5.5 1.5v12" stroke="currentColor" stroke-width="1.2"/>
@@ -22,19 +22,19 @@
       </div>
 
       <div id="header-center">
-        <div id="search-bar" title="Search files and content (⌘K)">
+        <div id="search-bar" data-i18n-title="header.search" title="Search files and content (⌘K)">
           <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
             <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
             <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
-          <span id="search-bar-label">Search files and content…</span>
+          <span id="search-bar-label" data-i18n="header.searchPlaceholder">Search files and content…</span>
           <kbd>⌘K</kbd>
         </div>
       </div>
 
       <div id="header-right">
-        <button id="btn-search" class="btn-icon" style="display:none" title="Quick search (⌘K)">
-        <button id="btn-theme" class="btn-icon" title="Toggle light / dark mode">
+        <button id="btn-search" class="btn-icon" style="display:none" data-i18n-title="header.quickSearch" title="Quick search (⌘K)">
+        <button id="btn-theme" class="btn-icon" data-i18n-title="header.toggleTheme" title="Toggle light / dark mode">
           <svg id="icon-moon" width="15" height="15" viewBox="0 0 15 15" fill="none">
             <path d="M7.5 1.5a6 6 0 100 12 6 6 0 000-12zM2 7.5a5.5 5.5 0 015.5-5.5c-.41.9-.65 1.93-.65 3a6.35 6.35 0 006.35 6.35c-.9.41-1.93.65-3 .65A5.5 5.5 0 012 7.5z" fill="currentColor"/>
           </svg>
@@ -43,11 +43,11 @@
             <path d="M7.5 1v1.5M7.5 12.5V14M1 7.5h1.5M12.5 7.5H14M3.05 3.05l1.06 1.06M10.9 10.9l1.06 1.06M3.05 11.95l1.06-1.06M10.9 4.1l1.06-1.06" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
         </button>
-        <button id="btn-reload-toggle" class="btn-icon" title="Toggle hot reload">
+        <button id="btn-reload-toggle" class="btn-icon" data-i18n-title="header.toggleReload" title="Toggle hot reload">
           <span id="reload-dot" class="dot dot-off"></span>
-          Live
+          <span id="btn-live-text" data-i18n="header.live">Live</span>
         </button>
-        <button id="btn-settings" class="btn-icon" title="Settings">
+        <button id="btn-settings" class="btn-icon" data-i18n-title="header.settings" title="Settings">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
             <path d="M5 1h5v2.5l1.5 1 2-1 1.5 2.6-1.8 1.3v2.2l1.8 1.3L13.5 13l-2-1-1.5 1V15H5v-2.5l-1.5-1-2 1L0 9.9l1.8-1.3V6.4L0 5.1 1.5 2.5l2 1L5 2.5V1z" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linejoin="round"/>
             <circle cx="7.5" cy="7.5" r="1.8" stroke="currentColor" stroke-width="1.2"/>
@@ -68,7 +68,7 @@
             <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.2" fill="none"/>
           </svg>
           <span id="folder-name">—</span>
-          <button id="btn-change-folder" title="Close folder">
+          <button id="btn-change-folder" data-i18n-title="sidebar.closeFolder" title="Close folder">
             <svg width="9" height="9" viewBox="0 0 15 15" fill="none">
               <path d="M2 2l11 11M13 2L2 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
             </svg>
@@ -80,20 +80,20 @@
             <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
               <path d="M3 2.5h9M3 5.5h9M3 8.5h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            Files
+            <span data-i18n="sidebar.files">Files</span>
           </button>
           <button class="sidebar-tab" data-tab="toc">
             <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
               <path d="M2 3h11M2 7h8M2 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            Contents
+            <span data-i18n="sidebar.contents">Contents</span>
           </button>
           <button class="sidebar-tab" data-tab="recent">
             <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
               <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
               <path d="M7.5 4.5v3.25l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            Recent
+            <span data-i18n="sidebar.recent">Recent</span>
           </button>
         </div>
 
@@ -104,13 +104,13 @@
               <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
               <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
             </svg>
-            <input type="text" id="filter-input" placeholder="Filter files…" autocomplete="off" spellcheck="false">
-            <button id="btn-new-file" class="btn-new-file hidden" title="New file">
+            <input type="text" id="filter-input" data-i18n-placeholder="sidebar.filter" placeholder="Filter files…" autocomplete="off" spellcheck="false">
+            <button id="btn-new-file" class="btn-new-file hidden" data-i18n-title="sidebar.newFile" title="New file">
               <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
                 <path d="M7.5 2v11M2 7.5h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
               </svg>
             </button>
-            <button id="btn-refresh-folder" class="btn-new-file hidden" title="Refresh folder">
+            <button id="btn-refresh-folder" class="btn-new-file hidden" data-i18n-title="sidebar.refresh" title="Refresh folder">
               <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
                 <path d="M11 3.5A5 5 0 1 0 3 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 <path d="M11 0.5v3.5H7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -122,19 +122,19 @@
               <path d="M4 1h5.5L12 3.5V13a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2" fill="none"/>
               <path d="M8 1v3h3" stroke="currentColor" stroke-width="1.2"/>
             </svg>
-            <input type="text" id="new-file-input" placeholder="filename.md" autocomplete="off" spellcheck="false">
+            <input type="text" id="new-file-input" data-i18n-placeholder="sidebar.newFilePlaceholder" placeholder="filename.md" autocomplete="off" spellcheck="false">
           </div>
           <div id="file-tree">
             <div id="empty-state" class="empty-state">
               <svg width="36" height="36" viewBox="0 0 15 15" fill="none" style="opacity:0.35">
                 <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1" fill="none"/>
               </svg>
-              <p>No folder open yet</p>
+              <p data-i18n="sidebar.noFolder">No folder open yet</p>
               <button id="btn-open" class="btn-open-sidebar">
                 <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
                   <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/>
                 </svg>
-                Open Folder
+                <span data-i18n="sidebar.openFolder">Open Folder</span>
               </button>
             </div>
           </div>
@@ -144,7 +144,7 @@
         <div id="panel-toc" class="sidebar-panel">
           <nav id="toc">
             <div class="empty-state">
-              <p>Open a file to see its contents</p>
+              <p data-i18n="sidebar.noContent">Open a file to see its contents</p>
             </div>
           </nav>
         </div>
@@ -153,14 +153,14 @@
         <div id="panel-recent" class="sidebar-panel">
           <div id="recent-list">
             <div class="empty-state">
-              <p>No recently opened files</p>
+              <p data-i18n="sidebar.noRecent">No recently opened files</p>
             </div>
           </div>
         </div>
       </aside>
 
       <!-- Resize handle -->
-      <div id="resize-handle" title="Drag to resize"></div>
+      <div id="resize-handle" data-i18n-title="sidebar.resize" title="Drag to resize"></div>
 
       <!-- Viewer -->
       <main id="viewer">
@@ -178,7 +178,7 @@
               </div>
               <div>
                 <h1>Markdown<span>Browser</span></h1>
-                <p class="welcome-tagline">A local markdown reader &amp; editor — fast, private, offline.</p>
+                <p class="welcome-tagline" data-i18n="app.tagline">A local markdown reader &amp; editor — fast, private, offline.</p>
               </div>
             </div>
 
@@ -186,55 +186,55 @@
 
             <!-- About -->
             <div class="welcome-section">
-              <h2>About</h2>
-              <p>Markdown Browser lets you read, write, and search your local <code>.md</code> files directly in Chrome — no uploads, no cloud, no internet required. Your files stay on your machine.</p>
-              <p>Built with the <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" target="_blank">File System Access API</a> so Chrome accesses your folder directly with your explicit permission.</p>
+              <h2 data-i18n="welcome.about">About</h2>
+              <p data-i18n-html="welcome.aboutP1">Markdown Browser lets you read, write, and search your local <code>.md</code> files directly in Chrome — no uploads, no cloud, no internet required. Your files stay on your machine.</p>
+              <p data-i18n-html="welcome.aboutP2">Built with the <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" target="_blank">File System Access API</a> so Chrome accesses your folder directly with your explicit permission.</p>
             </div>
 
             <!-- How to use -->
             <div class="welcome-section">
-              <h2>How to use</h2>
+              <h2 data-i18n="welcome.howTo">How to use</h2>
               <div class="welcome-steps">
                 <div class="welcome-step">
                   <span class="step-num">1</span>
                   <div>
-                    <strong>Open a folder</strong>
-                    <p>Click <em>Open Folder</em> in the sidebar and select any local directory. All <code>.md</code>, <code>.mdx</code>, and <code>.markdown</code> files will appear in the file tree.</p>
+                    <strong data-i18n="welcome.step1Title">Open a folder</strong>
+                    <p data-i18n-html="welcome.step1Desc">Click <em>Open Folder</em> in the sidebar and select any local directory. All <code>.md</code>, <code>.mdx</code>, and <code>.markdown</code> files will appear in the file tree.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">2</span>
                   <div>
-                    <strong>Browse &amp; read</strong>
-                    <p>Click any file to open it. Use the <strong>Contents</strong> tab to jump to headings, and <strong>Recent</strong> to revisit past files. Use <kbd>⌘[</kbd> / <kbd>⌘]</kbd> to navigate between files.</p>
+                    <strong data-i18n="welcome.step2Title">Browse &amp; read</strong>
+                    <p data-i18n-html="welcome.step2Desc">Click any file to open it. Use the <strong>Contents</strong> tab to jump to headings, and <strong>Recent</strong> to revisit past files. Use <kbd>⌘[</kbd> / <kbd>⌘]</kbd> to navigate between files.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">3</span>
                   <div>
-                    <strong>Edit &amp; save</strong>
-                    <p>Click <strong>Edit</strong> in the breadcrumb (or <kbd>⌘⇧E</kbd>) to edit blocks inline — click any paragraph, heading, or list to edit it in place. Use the <strong>▾</strong> dropdown for the full-screen editor (<kbd>⌘E</kbd>). Press <kbd>⌘S</kbd> to save.</p>
+                    <strong data-i18n="welcome.step3Title">Edit &amp; save</strong>
+                    <p data-i18n-html="welcome.step3Desc">Click <strong>Edit</strong> in the breadcrumb (or <kbd>⌘⇧E</kbd>) to edit blocks inline — click any paragraph, heading, or list to edit it in place. Use the <strong>▾</strong> dropdown for the full-screen editor (<kbd>⌘E</kbd>). Press <kbd>⌘S</kbd> to save.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">4</span>
                   <div>
-                    <strong>Wiki-links &amp; callouts</strong>
-                    <p>Link between files with <code>[[filename]]</code> — a backlinks panel shows which files reference the current one. Use Obsidian-style callouts: <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code>, and more.</p>
+                    <strong data-i18n="welcome.step4Title">Wiki-links &amp; callouts</strong>
+                    <p data-i18n-html="welcome.step4Desc">Link between files with <code>[[filename]]</code> — a backlinks panel shows which files reference the current one. Use Obsidian-style callouts: <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code>, and more.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">5</span>
                   <div>
-                    <strong>Create, delete &amp; search</strong>
-                    <p>Click <strong>+</strong> in the sidebar to create a file. Hover any file to reveal the delete button. Press <kbd>⌘K</kbd> to search filenames and content across your entire folder instantly.</p>
+                    <strong data-i18n="welcome.step5Title">Create, delete &amp; search</strong>
+                    <p data-i18n-html="welcome.step5Desc">Click <strong>+</strong> in the sidebar to create a file. Hover any file to reveal the delete button. Press <kbd>⌘K</kbd> to search filenames and content across your entire folder instantly.</p>
                   </div>
                 </div>
                 <div class="welcome-step">
                   <span class="step-num">6</span>
                   <div>
-                    <strong>Export &amp; hot reload</strong>
-                    <p>Click <strong>PDF</strong> in the breadcrumb to export a clean print. Toggle <em>Live</em> in the header to auto-refresh when you save in an external editor.</p>
+                    <strong data-i18n="welcome.step6Title">Export &amp; hot reload</strong>
+                    <p data-i18n-html="welcome.step6Desc">Click <strong>PDF</strong> in the breadcrumb to export a clean print. Toggle <em>Live</em> in the header to auto-refresh when you save in an external editor.</p>
                   </div>
                 </div>
               </div>
@@ -242,43 +242,43 @@
 
             <!-- Keyboard shortcuts -->
             <div class="welcome-section">
-              <h2>Keyboard shortcuts</h2>
+              <h2 data-i18n="welcome.shortcuts">Keyboard shortcuts</h2>
               <div class="welcome-shortcuts-grid">
-                <kbd>⌘K</kbd>     <span>Search files and content</span>
-                <kbd>⌘⇧E</kbd>   <span>Inline edit mode</span>
-                <kbd>⌘E</kbd>     <span>Full editor mode</span>
-                <kbd>⌘S</kbd>     <span>Save file</span>
-                <kbd>⌘F</kbd>     <span>Find &amp; replace (full editor)</span>
-                <kbd>⌘[</kbd>     <span>Previous file</span>
-                <kbd>⌘]</kbd>     <span>Next file</span>
-                <kbd>⌘B</kbd>     <span>Toggle sidebar</span>
-                <kbd>ESC</kbd>    <span>Close palette, settings, or find bar</span>
+                <kbd>⌘K</kbd>     <span data-i18n="welcome.shortcutSearch">Search files and content</span>
+                <kbd>⌘⇧E</kbd>   <span data-i18n="welcome.shortcutInlineEdit">Inline edit mode</span>
+                <kbd>⌘E</kbd>     <span data-i18n="welcome.shortcutFullEditor">Full editor mode</span>
+                <kbd>⌘S</kbd>     <span data-i18n="welcome.shortcutSave">Save file</span>
+                <kbd>⌘F</kbd>     <span data-i18n="welcome.shortcutFind">Find &amp; replace (full editor)</span>
+                <kbd>⌘[</kbd>     <span data-i18n="welcome.shortcutPrev">Previous file</span>
+                <kbd>⌘]</kbd>     <span data-i18n="welcome.shortcutNext">Next file</span>
+                <kbd>⌘B</kbd>     <span data-i18n="welcome.shortcutSidebar">Toggle sidebar</span>
+                <kbd>ESC</kbd>    <span data-i18n="welcome.shortcutClose">Close palette, settings, or find bar</span>
               </div>
             </div>
 
             <!-- Features -->
             <div class="welcome-section">
-              <h2>Features</h2>
+              <h2 data-i18n="welcome.features">Features</h2>
               <ul class="welcome-features">
-                <li><strong>Inline editing</strong> — click any block in the preview to edit it in place (⌘⇧E)</li>
-                <li><strong>Full-screen editor</strong> — edit files directly with find &amp; replace, save with ⌘S</li>
-                <li><strong>Wiki-links</strong> — <code>[[filename]]</code> cross-links with a backlinks panel per file</li>
-                <li><strong>Callout blocks</strong> — Obsidian-style <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code> and more</li>
-                <li><strong>Create &amp; delete files</strong> — manage your markdown folder without leaving the app</li>
-                <li><strong>Export to PDF</strong> — clean, print-ready output</li>
-                <li>Full <strong>GitHub Flavored Markdown</strong> — tables, task lists, front matter, code blocks</li>
-                <li><strong>Syntax highlighting</strong> for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON</li>
-                <li><strong>Hot reload</strong> — live preview as you edit in any external editor</li>
-                <li><strong>Full-text search</strong> across all files in the folder</li>
-                <li><strong>Table of contents</strong> with scroll-spy highlighting</li>
-                <li><strong>Resizable sidebar</strong>, font size &amp; reading width controls</li>
-                <li><strong>Light &amp; dark mode</strong> — toggle in the header</li>
-                <li>100% <strong>offline &amp; private</strong> — no data ever leaves your machine</li>
+                <li data-i18n-html="welcome.featureInlineEdit"><strong>Inline editing</strong> — click any block in the preview to edit it in place (⌘⇧E)</li>
+                <li data-i18n-html="welcome.featureFullEditor"><strong>Full-screen editor</strong> — edit files directly with find &amp; replace, save with ⌘S</li>
+                <li data-i18n-html="welcome.featureWikiLinks"><strong>Wiki-links</strong> — <code>[[filename]]</code> cross-links with a backlinks panel per file</li>
+                <li data-i18n-html="welcome.featureCallouts"><strong>Callout blocks</strong> — Obsidian-style <code>&gt; [!NOTE]</code>, <code>&gt; [!WARNING]</code>, <code>&gt; [!TIP]</code> and more</li>
+                <li data-i18n-html="welcome.featureFileMgmt"><strong>Create &amp; delete files</strong> — manage your markdown folder without leaving the app</li>
+                <li data-i18n-html="welcome.featurePdf"><strong>Export to PDF</strong> — clean, print-ready output</li>
+                <li data-i18n-html="welcome.featureGfm">Full <strong>GitHub Flavored Markdown</strong> — tables, task lists, front matter, code blocks</li>
+                <li data-i18n-html="welcome.featureHighlighting"><strong>Syntax highlighting</strong> for JS, TS, Python, Go, Rust, SQL, CSS, HTML, Bash, JSON</li>
+                <li data-i18n-html="welcome.featureHotReload"><strong>Hot reload</strong> — live preview as you edit in any external editor</li>
+                <li data-i18n-html="welcome.featureSearch"><strong>Full-text search</strong> across all files in the folder</li>
+                <li data-i18n-html="welcome.featureToc"><strong>Table of contents</strong> with scroll-spy highlighting</li>
+                <li data-i18n-html="welcome.featureLayout"><strong>Resizable sidebar</strong>, font size &amp; reading width controls</li>
+                <li data-i18n-html="welcome.featureTheme"><strong>Light &amp; dark mode</strong> — toggle in the header</li>
+                <li data-i18n-html="welcome.featureOffline">100% <strong>offline &amp; private</strong> — no data ever leaves your machine</li>
               </ul>
             </div>
 
             <div class="welcome-footer">
-              Made by <a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a>
+              <span data-i18n-html="welcome.madeBy">Made by <a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a></span>
             </div>
 
           </div>
@@ -295,23 +295,23 @@
               <span id="file-path-display"></span>
             </div>
             <div id="file-breadcrumb-actions">
-              <button id="btn-export-pdf" class="btn-breadcrumb-action" title="Export to PDF">
+              <button id="btn-export-pdf" class="btn-breadcrumb-action" data-i18n-title="viewer.exportPdf" title="Export to PDF">
                 <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
                   <path d="M3.5 1h8L14 3.5V13.5a.5.5 0 01-.5.5h-10a.5.5 0 01-.5-.5V1.5a.5.5 0 01.5-.5z" stroke="currentColor" stroke-width="1.2" fill="none"/>
                   <path d="M8.5 1v3.5H14" stroke="currentColor" stroke-width="1.2"/>
                   <path d="M5.5 8.5h4M5.5 10.5h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                PDF
+                <span data-i18n="viewer.pdf">PDF</span>
               </button>
               <div id="edit-split-btn" class="hidden">
-                <button id="btn-inline-edit" class="btn-breadcrumb-action btn-edit-file" title="Inline edit (⌘⇧E)">
+                <button id="btn-inline-edit" class="btn-breadcrumb-action btn-edit-file" data-i18n-title="viewer.inlineEdit" title="Inline edit (⌘⇧E)">
                   <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
                     <path d="M1 11.5V14h2.5l7-7L8 4.5l-7 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
                     <path d="M10.5 3l1.5-1.5L14 3.5 12.5 5 10.5 3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
                   </svg>
-                  Edit
+                  <span data-i18n="viewer.edit">Edit</span>
                 </button>
-                <button id="btn-edit-caret" class="btn-edit-caret" title="More edit options">
+                <button id="btn-edit-caret" class="btn-edit-caret" data-i18n-title="viewer.moreOptions" title="More edit options">
                   <svg width="9" height="9" viewBox="0 0 15 15" fill="none">
                     <path d="M3 5.5l4.5 4 4.5-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -322,7 +322,7 @@
                       <path d="M11.5 1L14 3.5 5 12.5H2.5V10L11.5 1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/>
                       <path d="M9.5 3L12 5.5" stroke="currentColor" stroke-width="1.3"/>
                     </svg>
-                    Full editor
+                    <span data-i18n="viewer.fullEditor">Full editor</span>
                     <kbd>⌘E</kbd>
                   </button>
                 </div>
@@ -350,27 +350,27 @@
             </div>
             <span id="editor-unsaved" class="hidden"></span>
             <div class="editor-toolbar-spacer"></div>
-            <button id="btn-discard-editor" class="btn-icon">Discard</button>
+            <button id="btn-discard-editor" class="btn-icon" data-i18n="editor.discard">Discard</button>
             <button id="btn-save-editor" class="btn-primary">
               <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
                 <path d="M3 2h7.5L13 4.5V13H2V2h1z" stroke="currentColor" stroke-width="1.2" fill="none"/>
                 <rect x="5" y="2" width="5" height="3.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
                 <rect x="3.5" y="8" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
               </svg>
-              Save
+              <span data-i18n="editor.save">Save</span>
               <kbd>⌘S</kbd>
             </button>
           </div>
           <div id="find-bar" class="hidden">
             <div class="find-group">
-              <input type="text" id="find-input" placeholder="Find…" autocomplete="off" spellcheck="false">
+              <input type="text" id="find-input" data-i18n-placeholder="editor.findPlaceholder" placeholder="Find…" autocomplete="off" spellcheck="false">
               <span id="find-status"></span>
-              <button id="btn-find-prev" class="btn-icon" title="Previous (Shift+Enter)">
+              <button id="btn-find-prev" class="btn-icon" data-i18n-title="editor.findPrev" title="Previous (Shift+Enter)">
                 <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
                   <path d="M7.5 12V3M3.5 6.5L7.5 3l4 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
-              <button id="btn-find-next" class="btn-icon" title="Next (Enter)">
+              <button id="btn-find-next" class="btn-icon" data-i18n-title="editor.findNext" title="Next (Enter)">
                 <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
                   <path d="M7.5 3v9M3.5 8.5L7.5 12l4-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
@@ -378,11 +378,11 @@
             </div>
             <div class="find-sep"></div>
             <div class="find-group">
-              <input type="text" id="replace-input" placeholder="Replace with…" autocomplete="off" spellcheck="false">
-              <button id="btn-replace-one" class="btn-small">Replace</button>
-              <button id="btn-replace-all" class="btn-small">All</button>
+              <input type="text" id="replace-input" data-i18n-placeholder="editor.replacePlaceholder" placeholder="Replace with…" autocomplete="off" spellcheck="false">
+              <button id="btn-replace-one" class="btn-small" data-i18n="editor.replace">Replace</button>
+              <button id="btn-replace-all" class="btn-small" data-i18n="editor.replaceAll">All</button>
             </div>
-            <button id="btn-close-find" class="btn-icon find-close" title="Close (Esc)">
+            <button id="btn-close-find" class="btn-icon find-close" data-i18n-title="editor.findClose" title="Close (Esc)">
               <svg width="10" height="10" viewBox="0 0 15 15" fill="none">
                 <path d="M2 2l11 11M13 2L2 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
@@ -406,14 +406,14 @@
             <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
             <line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
-          <input type="text" id="palette-input" placeholder="Search files and content…" autocomplete="off" spellcheck="false">
+          <input type="text" id="palette-input" data-i18n-placeholder="palette.searchPlaceholder" placeholder="Search files and content…" autocomplete="off" spellcheck="false">
           <kbd class="palette-esc">ESC</kbd>
         </div>
         <div id="palette-results"></div>
         <div id="palette-footer">
-          <span><kbd>↑↓</kbd> navigate</span>
-          <span><kbd>↵</kbd> open</span>
-          <span><kbd>ESC</kbd> close</span>
+          <span><kbd>↑↓</kbd> <span data-i18n="palette.navigate">navigate</span></span>
+          <span><kbd>↵</kbd> <span data-i18n="palette.open">open</span></span>
+          <span><kbd>ESC</kbd> <span data-i18n="palette.close">close</span></span>
         </div>
       </div>
     </div>
@@ -423,48 +423,55 @@
       <div id="settings-backdrop"></div>
       <div id="settings-modal">
         <div id="settings-header">
-          <h2>Settings</h2>
+          <h2 data-i18n="settings.title">Settings</h2>
           <button id="btn-close-settings" class="btn-icon">✕</button>
         </div>
         <div id="settings-body">
           <div class="setting-group">
-            <label>Font size</label>
+            <label data-i18n="settings.fontSize">Font size</label>
             <div class="setting-control">
-              <button class="btn-small" id="font-decrease">A−</button>
+              <button class="btn-small" id="font-decrease" data-i18n="settings.decrease">A−</button>
               <span id="font-size-display">16px</span>
-              <button class="btn-small" id="font-increase">A+</button>
+              <button class="btn-small" id="font-increase" data-i18n="settings.increase">A+</button>
             </div>
           </div>
           <div class="setting-group">
-            <label>Reading width</label>
+            <label data-i18n="settings.readingWidth">Reading width</label>
             <select id="reading-width">
-              <option value="680">Narrow (680px)</option>
-              <option value="780" selected>Normal (780px)</option>
-              <option value="960">Wide (960px)</option>
-              <option value="100%">Full width</option>
+              <option value="680" data-i18n="settings.widthNarrow">Narrow (680px)</option>
+              <option value="780" selected data-i18n="settings.widthNormal">Normal (780px)</option>
+              <option value="960" data-i18n="settings.widthWide">Wide (960px)</option>
+              <option value="100%" data-i18n="settings.widthFull">Full width</option>
             </select>
           </div>
           <div class="setting-group">
-            <label>Font family</label>
+            <label data-i18n="settings.fontFamily">Font family</label>
             <select id="font-family">
-              <option value="sans">System sans-serif</option>
-              <option value="serif">Serif</option>
-              <option value="mono">Monospace</option>
+              <option value="sans" data-i18n="settings.fontSans">System sans-serif</option>
+              <option value="serif" data-i18n="settings.fontSerif">Serif</option>
+              <option value="mono" data-i18n="settings.fontMono">Monospace</option>
             </select>
           </div>
           <div class="setting-group">
-            <label>Hot reload interval</label>
+            <label data-i18n="settings.reloadInterval">Hot reload interval</label>
             <select id="reload-interval">
-              <option value="500">500ms</option>
-              <option value="1000" selected>1 second</option>
-              <option value="2000">2 seconds</option>
-              <option value="5000">5 seconds</option>
+              <option value="500" data-i18n="settings.interval500">500ms</option>
+              <option value="1000" selected data-i18n="settings.interval1s">1 second</option>
+              <option value="2000" data-i18n="settings.interval2s">2 seconds</option>
+              <option value="5000" data-i18n="settings.interval5s">5 seconds</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label data-i18n="settings.language">Language</label>
+            <select id="language-select">
+              <option value="en" data-i18n="settings.langEn">English</option>
+              <option value="zh" data-i18n="settings.langZh">中文</option>
             </select>
           </div>
           <div class="settings-links">
-            <a href="https://markdownbrowser.abhikuchbhi.in/about.html" target="_blank">About</a>
+            <a href="https://markdownbrowser.abhikuchbhi.in/about.html" target="_blank" data-i18n="settings.about">About</a>
             <span>·</span>
-            <a href="https://markdownbrowser.abhikuchbhi.in/privacy.html" target="_blank">Privacy Policy</a>
+            <a href="https://markdownbrowser.abhikuchbhi.in/privacy.html" target="_blank" data-i18n="settings.privacy">Privacy Policy</a>
             <span>·</span>
             <a href="https://abhikuchbhi.in" target="_blank">abhikuchbhi.in</a>
           </div>
@@ -474,8 +481,10 @@
 
   </div><!-- #app -->
 
+  <script src="lib/i18n.js"></script>
   <script src="lib/markdown.js"></script>
   <script src="lib/highlighter.js"></script>
+  <script src="lib/mermaid.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

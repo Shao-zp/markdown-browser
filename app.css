@@ -1755,6 +1755,32 @@ input:focus-visible { outline: none; }
 .backlink-item:hover svg { color: var(--accent); }
 
 /* ============================================================
+   Mermaid diagrams
+   ============================================================ */
+
+.mermaid {
+  margin: 16px 0;
+  overflow-x: auto;
+  text-align: center;
+  background: var(--bg-2, #fafafa);
+  border-radius: var(--radius, 6px);
+  padding: 16px 8px;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Print support for mermaid */
+@media print {
+  .mermaid {
+    background: #fff !important;
+    padding: 8px !important;
+  }
+}
+
+/* ============================================================
    Print / Export PDF
    ============================================================ */
 

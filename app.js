@@ -122,6 +122,7 @@ const dom = {
 // ── Init ───────────────────────────────────────────────────────
 
 async function init() {
+  await I18n.init();
   await loadSettings();
   await loadRecent();
   applySettings();
@@ -175,7 +176,7 @@ function applyTheme(theme) {
   const isDark = theme === 'dark';
   dom.iconMoon.style.display = isDark  ? '' : 'none';
   dom.iconSun.style.display  = isDark  ? 'none' : '';
-  dom.btnTheme.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+  dom.btnTheme.title = isDark ? I18n.t('theme.switchLight') : I18n.t('theme.switchDark');
 }
 
 function toggleTheme() {
@@ -246,7 +247,7 @@ async function addRecent(path, name) {
 
 function renderRecentList() {
   if (!state.recent.length) {
-    dom.recentList.innerHTML = '<div class="empty-state"><p>No recently opened files</p></div>';
+    dom.recentList.innerHTML = '<div class="empty-state"><p>' + I18n.t('sidebar.noRecent') + '</p></div>';
     return;
   }
   dom.recentList.innerHTML = state.recent.map(r => `
@@ -341,7 +342,7 @@ async function resetFolder() {
   dom.statusWords.textContent = '';
   dom.statusReadtime.textContent = '';
   dom.statusModified.textContent = '';
-  dom.toc.innerHTML = '<div class="empty-state"><p>Open a file to see its contents</p></div>';
+  dom.toc.innerHTML = '<div class="empty-state"><p>' + I18n.t('sidebar.noContent') + '</p></div>';
 
   showNoFolderState();
 
@@ -355,12 +356,12 @@ function showNoFolderState() {
       <svg width="36" height="36" viewBox="0 0 15 15" fill="none" style="opacity:0.35">
         <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1" fill="none"/>
       </svg>
-      <p>No folder open yet</p>
+      <p>${I18n.t('sidebar.noFolder')}</p>
       <button id="btn-open" class="btn-open-sidebar">
         <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
           <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/>
         </svg>
-        Open Folder
+        ${I18n.t('sidebar.openFolder')}
       </button>
     </div>
   `;
@@ -470,7 +471,7 @@ async function refreshFolder() {
       }
     }
 
-    dom.statusModified.textContent = 'Folder refreshed';
+    dom.statusModified.textContent = I18n.t('viewer.folderRefreshed');
     setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
   } catch (e) {
     if (e.name !== 'AbortError') console.error('Refresh failed:', e);
@@ -519,7 +520,7 @@ async function checkFolderChanges() {
       dom.welcome.classList.add('visible');
       dom.statusWords.textContent = '';
       dom.statusReadtime.textContent = '';
-      dom.statusModified.textContent = 'File deleted externally';
+      dom.statusModified.textContent = I18n.t('viewer.fileDeleted');
       setTimeout(() => { dom.statusModified.textContent = ''; }, 3000);
     }
 
@@ -565,7 +566,7 @@ function buildTree() {
 function renderFileTree(tree, filter = '') {
   const filterLow = filter.toLowerCase();
   const html = renderNode(tree, 0, filterLow);
-  dom.fileTree.innerHTML = html || '<div class="empty-state"><p>No matches</p></div>';
+  dom.fileTree.innerHTML = html || '<div class="empty-state"><p>' + I18n.t('sidebar.noMatches') + '</p></div>';
   bindTreeEvents();
 }
 
@@ -606,13 +607,13 @@ function renderNode(node, depth, filter) {
           <path d="M8 1v3h3" stroke="currentColor" stroke-width="1.2"/>
         </svg>
         <span class="tree-name">${highlightMatch(file.name, filter)}</span>
-        <button class="tree-copy-btn" data-path="${escAttr(file.path)}" title="Copy path">
+        <button class="tree-copy-btn" data-path="${escAttr(file.path)}" title="${I18n.t('file.copyPath')}">
           <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
             <rect x="2" y="4" width="9" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/>
             <path d="M5 4V2.5A1.5 1.5 0 016.5 1h6A1.5 1.5 0 0114 2.5v9A1.5 1.5 0 0112.5 13H11" stroke="currentColor" stroke-width="1.3"/>
           </svg>
         </button>
-        <button class="tree-delete-btn" data-path="${escAttr(file.path)}" title="Delete file">
+        <button class="tree-delete-btn" data-path="${escAttr(file.path)}" title="${I18n.t('file.delete')}">
           <svg width="11" height="11" viewBox="0 0 15 15" fill="none">
             <path d="M5 2h5M2 4h11M4 4l.9 9h5.2L11 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -667,7 +668,7 @@ async function deleteFile(path) {
   const info = state.files.get(path);
   if (!info) return;
 
-  if (!confirm(`Delete "${info.name}"?\n\nThis action cannot be undone.`)) return;
+  if (!confirm(I18n.t('file.deleteConfirm', info.name))) return;
 
   try {
     const perm = await state.folderHandle.requestPermission({ mode: 'readwrite' });
@@ -705,7 +706,7 @@ async function deleteFile(path) {
       dom.statusReadtime.textContent = '';
     }
   } catch (e) {
-    if (e.name !== 'AbortError') alert('Failed to delete file: ' + e.message);
+    if (e.name !== 'AbortError') alert(I18n.t('file.deleteFailed', e.message));
   }
 }
 
@@ -759,7 +760,7 @@ function renderDocument(path, name, text, preserveScroll = false) {
       a.addEventListener('click', e => { e.preventDefault(); openFile(resolved); });
     } else {
       a.classList.add('unresolved');
-      a.title = `"${target}" not found in folder`;
+      a.title = I18n.t('viewer.wikiNotFound', target);
       a.addEventListener('click', e => e.preventDefault());
     }
   });
@@ -773,10 +774,20 @@ function renderDocument(path, name, text, preserveScroll = false) {
       e.stopPropagation();
       const code = btn.dataset.code || btn.closest('.code-block')?.querySelector('code')?.innerText || '';
       await navigator.clipboard.writeText(code);
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      btn.textContent = I18n.t('copy.copied');
+      setTimeout(() => { btn.textContent = I18n.t('copy.copy'); }, 1500);
     });
   });
+
+  // Mermaid diagrams
+  if (typeof mermaid !== 'undefined') {
+    // Defer to avoid blocking the main render
+    requestAnimationFrame(() => {
+      try {
+        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+      } catch (_) { /* silently ignore render errors */ }
+    });
+  }
 
   renderTOC(headings);
   updateStatusBar(name, text);
@@ -789,7 +800,7 @@ function renderDocument(path, name, text, preserveScroll = false) {
 
 function renderTOC(headings) {
   if (!headings.length) {
-    dom.toc.innerHTML = '<div class="empty-state"><p>No headings found</p></div>';
+    dom.toc.innerHTML = '<div class="empty-state"><p>' + I18n.t('toc.noHeadings') + '</p></div>';
     return;
   }
 
@@ -837,17 +848,17 @@ function updateScrollSpy() {
 function updateStatusBar(name, text) {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   const mins = Math.max(1, Math.round(words / 200));
-  dom.statusWords.textContent = words.toLocaleString() + ' words';
-  dom.statusReadtime.textContent = mins + ' min read';
+  dom.statusWords.textContent = I18n.t('viewer.words', words.toLocaleString());
+  dom.statusReadtime.textContent = I18n.t('viewer.minRead', mins);
 }
 
 function updateLiveIndicator() {
   if (state.hotReload) {
     dom.reloadDot.className = 'dot dot-live';
-    dom.btnReloadToggle.title = 'Hot reload on — click to disable';
+    dom.btnReloadToggle.title = I18n.t('reload.on');
   } else {
     dom.reloadDot.className = 'dot dot-off';
-    dom.btnReloadToggle.title = 'Hot reload off — click to enable';
+    dom.btnReloadToggle.title = I18n.t('reload.off');
   }
 }
 
@@ -874,7 +885,7 @@ async function checkForChanges() {
       state.currentLastModified = file.lastModified;
       const text = await file.text();
       renderDocument(state.currentPath, state.files.get(state.currentPath)?.name || '', text, true);
-      dom.statusModified.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      dom.statusModified.textContent = I18n.t('viewer.updated', new Date().toLocaleTimeString());
       setTimeout(() => { dom.statusModified.textContent = ''; }, 3000);
     }
   } catch (e) {
@@ -883,7 +894,7 @@ async function checkForChanges() {
       stopFolderScan();
       state.hotReload = false;
       updateLiveIndicator();
-      dom.statusModified.textContent = 'Live reload paused — re-open folder to resume';
+      dom.statusModified.textContent = I18n.t('viewer.reloadPaused');
       setTimeout(() => { dom.statusModified.textContent = ''; }, 5000);
     }
   } finally {
@@ -933,13 +944,13 @@ function renderPaletteResults(query) {
   if (!q) {
     // Show recent files first
     if (state.recent.length) {
-      items.push({ section: 'Recent Files' });
+      items.push({ section: I18n.t('palette.recentFiles') });
       for (const r of state.recent.slice(0, 6)) {
         if (state.files.has(r.path)) items.push({ type: 'file', path: r.path, name: r.name });
       }
     }
     // Then all files
-    items.push({ section: 'All Files' });
+    items.push({ section: I18n.t('palette.allFiles') });
     const allFiles = [...state.files.entries()].slice(0, 20);
     for (const [path, info] of allFiles) {
       if (!state.recent.find(r => r.path === path)) {
@@ -955,7 +966,7 @@ function renderPaletteResults(query) {
       }
     }
     if (nameMatches.length) {
-      items.push({ section: 'Files' });
+      items.push({ section: I18n.t('palette.files') });
       items.push(...nameMatches.slice(0, 8));
     }
 
@@ -971,14 +982,14 @@ function renderPaletteResults(query) {
         }
       }
       if (contentMatches.length) {
-        items.push({ section: 'In Files' });
+        items.push({ section: I18n.t('palette.inFiles') });
         items.push(...contentMatches.slice(0, 6));
       }
     }
   }
 
   if (items.filter(i => i.type).length === 0) {
-    dom.paletteResults.innerHTML = '<div class="empty-state" style="padding:24px"><p>No results</p></div>';
+    dom.paletteResults.innerHTML = '<div class="empty-state" style="padding:24px"><p>' + I18n.t('palette.noResults') + '</p></div>';
     paletteSelected = -1;
     return;
   }
@@ -1068,7 +1079,11 @@ function navigateFile(dir) {
 
 // ── Settings panel ─────────────────────────────────────────────
 
-function openSettings() { dom.settingsPanel.classList.remove('hidden'); }
+function openSettings() {
+  dom.settingsPanel.classList.remove('hidden');
+  const langSelect = document.getElementById('language-select');
+  if (langSelect) langSelect.value = I18n.getLanguage();
+}
 function closeSettings() { dom.settingsPanel.classList.add('hidden'); }
 
 // ── Utilities ──────────────────────────────────────────────────
@@ -1159,7 +1174,7 @@ async function enterEditMode() {
 
 function exitEditMode() {
   if (state.editUnsaved) {
-    if (!confirm('You have unsaved changes. Discard them?')) return false;
+    if (!confirm(I18n.t('editor.discardConfirm'))) return false;
   }
   dom.findBar.classList.add('hidden');
   state.editMode = false;
@@ -1194,11 +1209,11 @@ async function saveFile() {
     dom.btnEdit.classList.remove('active');
     if (state.hotReload) startHotReload();
 
-    dom.statusModified.textContent = 'Saved';
+    dom.statusModified.textContent = I18n.t('viewer.saved');
     setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
   } catch (e) {
     console.error('Failed to save:', e);
-    alert('Failed to save file: ' + e.message);
+    alert(I18n.t('editor.saveFailed', e.message));
   }
 }
 
@@ -1222,7 +1237,7 @@ async function confirmNewFile() {
   if (!name.includes('.')) name += '.md';
 
   if (state.files.has(name)) {
-    alert(`"${name}" already exists.`);
+    alert(I18n.t('file.alreadyExists', name));
     return;
   }
 
@@ -1243,7 +1258,7 @@ async function confirmNewFile() {
     await openFile(name);
     await enterEditMode();
   } catch (e) {
-    if (e.name !== 'AbortError') alert('Failed to create file: ' + e.message);
+    if (e.name !== 'AbortError') alert(I18n.t('file.createFailed', e.message));
   }
 }
 
@@ -1343,7 +1358,7 @@ function updateFindStatus() {
     return;
   }
   if (!findMatches.length) {
-    dom.findStatus.textContent = 'No results';
+    dom.findStatus.textContent = I18n.t('editor.noResults');
     dom.findStatus.classList.add('no-match');
     return;
   }
@@ -1353,7 +1368,7 @@ function updateFindStatus() {
 
 function markEditorUnsaved() {
   state.editUnsaved = true;
-  dom.editorUnsaved.textContent = '● Unsaved';
+  dom.editorUnsaved.textContent = I18n.t('viewer.unsaved');
   dom.editorUnsaved.classList.remove('hidden', 'saved');
 }
 
@@ -1371,7 +1386,7 @@ function enterInlineEditMode() {
 function exitInlineEditMode(skipConfirm = false) {
   if (state.activeBlockEditor) commitBlockEdit();
   if (state.inlineUnsaved && !skipConfirm) {
-    if (!confirm('You have unsaved inline edits. Discard them?')) return false;
+    if (!confirm(I18n.t('editor.discardInlineConfirm'))) return false;
   }
   state.inlineEditMode = false;
   state.inlineUnsaved = false;
@@ -1420,7 +1435,7 @@ function activateBlockEdit(bi, el) {
     autoResize();
     state.inlineUnsaved = true;
     state.sourceBlocks[bi] = textarea.value;
-    dom.statusModified.textContent = '● Unsaved';
+    dom.statusModified.textContent = I18n.t('viewer.unsaved');
   });
 
   textarea.addEventListener('keydown', e => {
@@ -1469,8 +1484,8 @@ function commitBlockEdit() {
       e.stopPropagation();
       const code = btn.dataset.code || btn.closest('.code-block')?.querySelector('code')?.innerText || '';
       await navigator.clipboard.writeText(code);
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      btn.textContent = I18n.t('copy.copied');
+      setTimeout(() => { btn.textContent = I18n.t('copy.copy'); }, 1500);
     });
   });
   tempDiv.querySelectorAll('a.wiki-link').forEach(a => {
@@ -1487,6 +1502,13 @@ function commitBlockEdit() {
   const frag = document.createDocumentFragment();
   while (tempDiv.firstChild) frag.appendChild(tempDiv.firstChild);
   wrap.replaceWith(frag);
+
+  // Re-render any mermaid diagrams in the replacement
+  if (typeof mermaid !== 'undefined') {
+    requestAnimationFrame(() => {
+      try { mermaid.run({ nodes: document.querySelectorAll('.mermaid') }); } catch (_) {}
+    });
+  }
 }
 
 function reconstructMarkdown() {
@@ -1511,11 +1533,11 @@ async function saveInlineEdits() {
     const file = await state.currentHandle.getFile();
     state.currentLastModified = file.lastModified;
     state.inlineUnsaved = false;
-    dom.statusModified.textContent = 'Saved';
+    dom.statusModified.textContent = I18n.t('viewer.saved');
     setTimeout(() => { dom.statusModified.textContent = ''; }, 2000);
   } catch (e) {
     console.error('Failed to save inline edits:', e);
-    alert('Failed to save: ' + e.message);
+    alert(I18n.t('editor.saveInlineFailed', e.message));
   }
 }
 
@@ -1562,7 +1584,7 @@ function renderBacklinks(currentPath) {
         <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
           <path d="M4.5 8.5l-3-3 3-3M1.5 5.5h8a4 4 0 014 4v1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        ${matches.length} backlink${matches.length !== 1 ? 's' : ''}
+        ${I18n.t(matches.length === 1 ? 'viewer.backlinks' : 'viewer.backlinks_plural', matches.length)}
       </div>
       <div class="backlinks-list">
         ${matches.map(m => `
@@ -1725,6 +1747,15 @@ function bindEvents() {
     if (state.hotReload) startHotReload();
   });
 
+  // Language selector
+  const langSelect = document.getElementById('language-select');
+  if (langSelect) {
+    langSelect.value = I18n.getLanguage();
+    langSelect.addEventListener('change', async e => {
+      await I18n.setLanguage(e.target.value);
+    });
+  }
+
   // Sidebar tabs
   document.querySelectorAll('.sidebar-tab').forEach(tab => {
     tab.addEventListener('click', () => switchSidebarTab(tab.dataset.tab));
@@ -1775,6 +1806,15 @@ function bindEvents() {
 
   updateLiveIndicator();
   initResizeHandle();
+
+  // Language change → re-translate dynamic strings
+  document.addEventListener('i18n-changed', () => {
+    updateLiveIndicator();
+    applyTheme(state.settings.theme);
+    if (!dom.welcome.classList.contains('visible')) {
+      renderTOC([]); // force empty TOC re-translate
+    }
+  });
 }
 
 // ── Boot ───────────────────────────────────────────────────────

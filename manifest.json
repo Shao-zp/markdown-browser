@@ -14,7 +14,7 @@
         "file://**/*.mdown",
         "file://**/*.mkd"
       ],
-      "js": ["lib/highlighter.js", "lib/markdown.js", "content.js"],
+      "js": ["lib/highlighter.js", "lib/markdown.js", "lib/mermaid.min.js", "content.js"],
       "run_at": "document_end",
       "all_frames": false
     }
