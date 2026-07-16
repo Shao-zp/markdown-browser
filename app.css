@@ -118,7 +118,7 @@ body {
   user-select: none;
   transition: opacity 200ms ease;
 }
-#header.sticky-scrolled { opacity: 0.6; }
+#header.sticky-scrolled { opacity: 0.4; }
 
 #header-left  { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
@@ -233,7 +233,7 @@ body {
   display: none !important;
 }
 #content-header.sticky-scrolled {
-  opacity: 0.6;
+  opacity: 0.4;
 }
 
 /* File breadcrumb inside sticky header */
@@ -1807,6 +1807,9 @@ input:focus-visible { outline: none; }
    ============================================================ */
 
 @media print {
+  /* Remove browser print header/footer (URL, date, page numbers) */
+  @page { margin: 0; }
+
   /* Reset ALL theme variables to clean white/black — overrides both light and dark */
   :root, :root[data-theme="light"], :root[data-theme="dark"] {
     --bg-0: #fff; --bg-1: #fff; --bg-2: #f7f7f7; --bg-3: #f0f0f0; --bg-4: #e8e8e8;
@@ -1823,7 +1826,7 @@ input:focus-visible { outline: none; }
   #header, #sidebar, #resize-handle,
   #content-header, #file-breadcrumb, #file-meta, #reading-progress,
   #command-palette, #settings-panel,
-  #editor-wrapper, #welcome { display: none !important; }
+  #editor-wrapper, #welcome, #site-credit { display: none !important; }
 
   /* Fully unconstrain the layout — every ancestor must allow full height */
   html, body  { height: auto !important; overflow: visible !important; background: #fff; }
