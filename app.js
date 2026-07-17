@@ -776,7 +776,10 @@ function bindTreeEvents() {
   dom.fileTree.querySelectorAll('.tree-copy-btn').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
-      await navigator.clipboard.writeText(btn.dataset.path);
+      const relPath = btn.dataset.path;
+      // Build a full path: folderName/relativePath
+      const fullPath = state.folderName ? state.folderName + '/' + relPath : relPath;
+      await navigator.clipboard.writeText(fullPath);
       const origHTML = btn.innerHTML;
       btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 8l3.5 3.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       btn.style.color = '#5D9E72';
