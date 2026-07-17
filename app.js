@@ -151,6 +151,9 @@ async function init() {
 
 // ── Single-file mode ───────────────────────────────────────────
 
+// Module-level flag so other functions know we're in single-file mode
+let singleFileMode = false;
+
 async function initSingleFile() {
   const data = await chromeGet('singleFile');
   if (!data || !data.raw) {
@@ -162,44 +165,64 @@ async function initSingleFile() {
   // Clean up the temporary storage
   chrome.storage.local.remove('singleFile');
 
+  singleFileMode = true;
+
   // Render the document immediately so the user sees content
   renderDocument(filename, filename, raw);
   dom.filePathDisplay.textContent = filename;
   dom.editSplitBtn.classList.remove('hidden');
   dom.contentHeader.classList.remove('hidden');
 
-  // Prompt the user to select the parent directory of the dropped file.
-  // This gives us a real FileSystemDirectoryHandle → full editing, saving,
-  // sibling file listing, recent files, search index, etc.
-  try {
-    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-    await mountFolder(dirHandle);
-    await idbSet('folderHandle', dirHandle);
+  // Show a prompt in the sidebar asking the user to open the parent folder.
+  // showDirectoryPicker() requires a user gesture — we can't auto-invoke it.
+  dom.folderBreadcrumb.classList.add('hidden');
+  dom.btnNewFile.classList.add('hidden');
+  dom.btnRefreshFolder.classList.add('hidden');
+  dom.fileTree.innerHTML = `
+    <div class="empty-state">
+      <svg width="36" height="36" viewBox="0 0 15 15" fill="none" style="opacity:0.35">
+        <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1" fill="none"/>
+      </svg>
+      <p>${I18n.t('sidebar.noFolder')}</p>
+      <button id="btn-open-single" class="btn-open-sidebar">
+        <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
+          <path d="M1 3.5A1.5 1.5 0 012.5 2h3.379a1.5 1.5 0 011.06.44L8.122 3.5H12.5A1.5 1.5 0 0114 5v6.5A1.5 1.5 0 0112.5 13h-10A1.5 1.5 0 011 11.5v-8z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        </svg>
+        ${I18n.t('sidebar.openFolder')}
+      </button>
+    </div>
+  `;
 
-    // Try to find the dropped file inside the selected directory
-    const fullPath = await findFileInTree(dirHandle, filename);
-    if (fullPath) {
-      state.currentPath = fullPath;
-      state.currentHandle = state.files.get(fullPath)?.handle || null;
-      const info = state.files.get(fullPath);
-      if (info) {
-        const file = await info.handle.getFile();
-        state.currentLastModified = file.lastModified;
-        const text = await file.text();
-        renderDocument(fullPath, info.name, text);
-        dom.filePathDisplay.textContent = fullPath;
-        addRecent(fullPath, info.name);
-        updateActiveTreeItem(fullPath);
-        startHotReload();
+  const btnOpenSingle = document.getElementById('btn-open-single');
+  if (btnOpenSingle) {
+    btnOpenSingle.addEventListener('click', async () => {
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        singleFileMode = false; // we now have a real folder
+        await mountFolder(dirHandle);
+        await idbSet('folderHandle', dirHandle);
+
+        // Find the dropped file inside the selected directory
+        const fullPath = await findFileInTree(dirHandle, filename);
+        if (fullPath) {
+          const info = state.files.get(fullPath);
+          if (info) {
+            state.currentPath = fullPath;
+            state.currentHandle = info.handle;
+            const file = await info.handle.getFile();
+            state.currentLastModified = file.lastModified;
+            const text = await file.text();
+            renderDocument(fullPath, info.name, text);
+            dom.filePathDisplay.textContent = fullPath;
+            addRecent(fullPath, info.name);
+            updateActiveTreeItem(fullPath);
+            startHotReload();
+          }
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('Folder pick failed:', e);
       }
-    }
-  } catch (e) {
-    if (e.name !== 'AbortError') console.error('Single-file folder pick failed:', e);
-    // User dismissed the picker — stay in read-only mode
-    dom.folderBreadcrumb.classList.add('hidden');
-    dom.btnNewFile.classList.add('hidden');
-    dom.btnRefreshFolder.classList.add('hidden');
-    dom.fileTree.innerHTML = '<div class="empty-state"><p>' + I18n.t('sidebar.noFolder') + '</p></div>';
+    });
   }
 }
 
@@ -1231,7 +1254,10 @@ function initResizeHandle() {
 // ── Edit mode ──────────────────────────────────────────────────
 
 async function enterEditMode() {
-  if (!state.currentHandle) return;
+  if (!state.currentHandle) {
+    if (singleFileMode) alert(I18n.t('editor.needFolder'));
+    return;
+  }
   if (state.inlineEditMode) exitInlineEditMode(true);
   // requestPermission is needed for handles from showDirectoryPicker,
   // but not for handles from showOpenFilePicker (already granted).
