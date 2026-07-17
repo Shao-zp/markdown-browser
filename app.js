@@ -426,22 +426,7 @@ async function mountFolder(handle) {
   dom.btnNewFile.classList.remove('hidden');
   dom.btnRefreshFolder.classList.remove('hidden');
 
-  // Ask the user for the full disk path of this folder (once per folder).
-  // The File System Access API doesn't expose disk paths for security reasons,
-  // so we need the user to tell us. We persist it in settings keyed by folder name.
-  const rootKey = 'folderRoot::' + handle.name;
-  let rootPath = await chromeGet(rootKey);
-  if (!rootPath) {
-    rootPath = prompt(
-      I18n.t('file.enterRootPath') + '\n\n' +
-      handle.name + ' → ?'
-    ) || '';
-    if (rootPath) {
-      rootPath = rootPath.replace(/\\/g, '/').replace(/\/$/, '');
-      await chromeSet(rootKey, rootPath);
-    }
-  }
-  state.folderRootPath = rootPath || '';
+  state.folderRootPath = '';  // File System Access API doesn't expose disk paths
 
   state.files.clear();
   state.searchIndex = [];
@@ -799,17 +784,12 @@ function bindTreeEvents() {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const relPath = btn.dataset.path;
-      // Build the full disk path: rootPath/relativePath
-      let fullPath = relPath;
-      if (state.folderRootPath) {
-        fullPath = state.folderRootPath + '/' + relPath;
-      } else if (state.folderName) {
-        fullPath = state.folderName + '/' + relPath;
-      }
-      // Convert to Windows-style backslashes if root path looks like a Windows path
-      if (/^[A-Za-z]:/.test(state.folderRootPath)) {
-        fullPath = fullPath.replace(/\//g, '\\');
-      }
+      // Use full disk path if known (from file:// URL), otherwise folderName/relativePath
+      let fullPath = state.folderRootPath
+        ? state.folderRootPath + '/' + relPath
+        : state.folderName
+          ? state.folderName + '/' + relPath
+          : relPath;
       await navigator.clipboard.writeText(fullPath);
       const origHTML = btn.innerHTML;
       btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 8l3.5 3.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
