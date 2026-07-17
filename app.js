@@ -173,7 +173,37 @@ async function initSingleFile() {
   dom.editSplitBtn.classList.remove('hidden');
   dom.contentHeader.classList.remove('hidden');
 
-  // Show a prompt in the sidebar asking the user to open the parent folder.
+  // Try to restore the last folder handle from IndexedDB.
+  // This makes recent files clickable if the user had a folder open before.
+  try {
+    const saved = await idbGet('folderHandle');
+    if (saved) {
+      const perm = await saved.queryPermission({ mode: 'read' });
+      if (perm === 'granted') {
+        singleFileMode = false;
+        await mountFolder(saved);
+
+        // Find the dropped file inside the restored directory
+        const fullPath = findFileInTreeSync(state.tree, filename);
+        if (fullPath && state.files.has(fullPath)) {
+          state.currentPath = fullPath;
+          state.currentHandle = state.files.get(fullPath).handle;
+          const info = state.files.get(fullPath);
+          const file = await info.handle.getFile();
+          state.currentLastModified = file.lastModified;
+          const text = await file.text();
+          renderDocument(fullPath, info.name, text);
+          dom.filePathDisplay.textContent = fullPath;
+          addRecent(fullPath, info.name);
+          updateActiveTreeItem(fullPath);
+          startHotReload();
+        }
+        return; // folder restored successfully — no need for the prompt
+      }
+    }
+  } catch (_) {}
+
+  // No saved folder — show a prompt in the sidebar asking the user to open one.
   // showDirectoryPicker() requires a user gesture — we can't auto-invoke it.
   dom.folderBreadcrumb.classList.add('hidden');
   dom.btnNewFile.classList.add('hidden');
@@ -378,8 +408,8 @@ function renderRecentList() {
       const path = el.dataset.path;
       if (state.files.has(path)) {
         openFile(path);
-      } else if (singleFileMode && state.folderHandle) {
-        // Single-file mode with a mounted folder — find the file by name
+      } else if (state.folderHandle) {
+        // Folder mounted but exact path not found — try matching by filename
         const name = path.split('/').pop();
         const fullPath = findFileInTreeSync(state.tree, name);
         if (fullPath && state.files.has(fullPath)) {
