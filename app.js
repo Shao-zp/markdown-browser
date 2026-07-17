@@ -173,38 +173,8 @@ async function initSingleFile() {
   dom.editSplitBtn.classList.remove('hidden');
   dom.contentHeader.classList.remove('hidden');
 
-  // Try to restore the last folder handle from IndexedDB.
-  // This makes recent files clickable if the user had a folder open before.
-  try {
-    const saved = await idbGet('folderHandle');
-    if (saved) {
-      const perm = await saved.queryPermission({ mode: 'read' });
-      if (perm === 'granted') {
-        singleFileMode = false;
-        await mountFolder(saved);
-
-        // Find the dropped file inside the restored directory
-        const fullPath = findFileInTreeSync(state.tree, filename);
-        if (fullPath && state.files.has(fullPath)) {
-          state.currentPath = fullPath;
-          state.currentHandle = state.files.get(fullPath).handle;
-          const info = state.files.get(fullPath);
-          const file = await info.handle.getFile();
-          state.currentLastModified = file.lastModified;
-          const text = await file.text();
-          renderDocument(fullPath, info.name, text);
-          dom.filePathDisplay.textContent = fullPath;
-          addRecent(fullPath, info.name);
-          updateActiveTreeItem(fullPath);
-          startHotReload();
-        }
-        return; // folder restored successfully — no need for the prompt
-      }
-    }
-  } catch (_) {}
-
-  // No saved folder — show a prompt in the sidebar asking the user to open one.
-  // showDirectoryPicker() requires a user gesture — we can't auto-invoke it.
+  // Single-file mode: no folder mounted, no file tree.
+  // User can open a folder via the sidebar button if desired.
   dom.folderBreadcrumb.classList.add('hidden');
   dom.btnNewFile.classList.add('hidden');
   dom.btnRefreshFolder.classList.add('hidden');
@@ -228,27 +198,9 @@ async function initSingleFile() {
     btnOpenSingle.addEventListener('click', async () => {
       try {
         const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        singleFileMode = false; // we now have a real folder
+        singleFileMode = false;
         await mountFolder(dirHandle);
         await idbSet('folderHandle', dirHandle);
-
-        // Find the dropped file inside the selected directory
-        const fullPath = await findFileInTree(dirHandle, filename);
-        if (fullPath) {
-          const info = state.files.get(fullPath);
-          if (info) {
-            state.currentPath = fullPath;
-            state.currentHandle = info.handle;
-            const file = await info.handle.getFile();
-            state.currentLastModified = file.lastModified;
-            const text = await file.text();
-            renderDocument(fullPath, info.name, text);
-            dom.filePathDisplay.textContent = fullPath;
-            addRecent(fullPath, info.name);
-            updateActiveTreeItem(fullPath);
-            startHotReload();
-          }
-        }
       } catch (e) {
         if (e.name !== 'AbortError') console.error('Folder pick failed:', e);
       }
@@ -389,6 +341,14 @@ async function addRecent(path, name) {
   state.recent.unshift({ path, name, ts: Date.now() });
   if (state.recent.length > 20) state.recent = state.recent.slice(0, 20);
   await chromeSet('recent', state.recent);
+
+  // Persist the file handle to IndexedDB so recent files can be
+  // reopened without needing a folder mount.
+  try {
+    const handle = state.currentHandle;
+    if (handle) await idbSet('recentHandle::' + path, handle);
+  } catch (_) {}
+
   renderRecentList();
 }
 
@@ -406,7 +366,6 @@ function renderRecentList() {
   dom.recentList.querySelectorAll('.recent-item').forEach(el => {
     el.addEventListener('click', async () => {
       const path = el.dataset.path;
-      const name = path.split('/').pop();
 
       // 1. File is in the current tree — open directly
       if (state.files.has(path)) {
@@ -415,6 +374,7 @@ function renderRecentList() {
       }
 
       // 2. Folder mounted but path mismatch — try matching by filename
+      const name = path.split('/').pop();
       if (state.folderHandle) {
         const fullPath = findFileInTreeSync(state.tree, name);
         if (fullPath && state.files.has(fullPath)) {
@@ -423,22 +383,20 @@ function renderRecentList() {
         }
       }
 
-      // 3. No folder at all — the click itself is a user gesture,
-      //    so we can prompt for a directory right here.
+      // 3. Try to restore the file handle from IndexedDB — opens
+      //    the file directly without needing a folder mount.
       try {
-        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        singleFileMode = false;
-        await mountFolder(dirHandle);
-        await idbSet('folderHandle', dirHandle);
-
-        // Now try to find the file in the freshly mounted tree
-        const fullPath = findFileInTreeSync(state.tree, name);
-        if (fullPath && state.files.has(fullPath)) {
-          openFile(fullPath);
+        const handle = await idbGet('recentHandle::' + path);
+        if (handle) {
+          const perm = await handle.queryPermission({ mode: 'read' });
+          if (perm !== 'granted') {
+            // The click is a user gesture, so we can request permission
+            const granted = await handle.requestPermission({ mode: 'read' });
+            if (granted !== 'granted') return;
+          }
+          await openSingleFile(handle);
         }
-      } catch (e) {
-        if (e.name !== 'AbortError') console.error('Folder pick failed:', e);
-      }
+      } catch (_) {}
     });
   });
 }
