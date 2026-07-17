@@ -404,17 +404,40 @@ function renderRecentList() {
     </div>
   `).join('');
   dom.recentList.querySelectorAll('.recent-item').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', async () => {
       const path = el.dataset.path;
+      const name = path.split('/').pop();
+
+      // 1. File is in the current tree — open directly
       if (state.files.has(path)) {
         openFile(path);
-      } else if (state.folderHandle) {
-        // Folder mounted but exact path not found — try matching by filename
-        const name = path.split('/').pop();
+        return;
+      }
+
+      // 2. Folder mounted but path mismatch — try matching by filename
+      if (state.folderHandle) {
+        const fullPath = findFileInTreeSync(state.tree, name);
+        if (fullPath && state.files.has(fullPath)) {
+          openFile(fullPath);
+          return;
+        }
+      }
+
+      // 3. No folder at all — the click itself is a user gesture,
+      //    so we can prompt for a directory right here.
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        singleFileMode = false;
+        await mountFolder(dirHandle);
+        await idbSet('folderHandle', dirHandle);
+
+        // Now try to find the file in the freshly mounted tree
         const fullPath = findFileInTreeSync(state.tree, name);
         if (fullPath && state.files.has(fullPath)) {
           openFile(fullPath);
         }
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('Folder pick failed:', e);
       }
     });
   });
