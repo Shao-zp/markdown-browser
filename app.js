@@ -9,11 +9,13 @@
 const state = {
   folderHandle: null,
   folderName: '',
+  folderRootPath: '',  // user-provided disk path for the current folder
   files: new Map(),        // relativePath → { handle, name, dir, lastModified }
   tree: null,
   currentPath: null,
   currentHandle: null,
   currentLastModified: 0,
+  currentFullPath: '',  // full disk path (when available, e.g. from file:// URL)
   hotReload: true,
   reloadInterval: null,
   reloadMs: 1000,
@@ -160,16 +162,19 @@ async function initSingleFile() {
     // No pending file — show welcome screen
     return;
   }
-  const { raw, filename } = data;
+  const { raw, filename, fullPath } = data;
 
   // Clean up the temporary storage
   chrome.storage.local.remove('singleFile');
 
   singleFileMode = true;
 
+  // Store the full disk path so copy-path can use it
+  state.currentFullPath = fullPath || '';
+
   // Render the document immediately so the user sees content
   renderDocument(filename, filename, raw);
-  dom.filePathDisplay.textContent = filename;
+  dom.filePathDisplay.textContent = fullPath || filename;
   dom.editSplitBtn.classList.remove('hidden');
   dom.contentHeader.classList.remove('hidden');
 
@@ -420,6 +425,23 @@ async function mountFolder(handle) {
   dom.folderBreadcrumb.classList.remove('hidden');
   dom.btnNewFile.classList.remove('hidden');
   dom.btnRefreshFolder.classList.remove('hidden');
+
+  // Ask the user for the full disk path of this folder (once per folder).
+  // The File System Access API doesn't expose disk paths for security reasons,
+  // so we need the user to tell us. We persist it in settings keyed by folder name.
+  const rootKey = 'folderRoot::' + handle.name;
+  let rootPath = await chromeGet(rootKey);
+  if (!rootPath) {
+    rootPath = prompt(
+      I18n.t('file.enterRootPath') + '\n\n' +
+      handle.name + ' → ?'
+    ) || '';
+    if (rootPath) {
+      rootPath = rootPath.replace(/\\/g, '/').replace(/\/$/, '');
+      await chromeSet(rootKey, rootPath);
+    }
+  }
+  state.folderRootPath = rootPath || '';
 
   state.files.clear();
   state.searchIndex = [];
@@ -777,8 +799,17 @@ function bindTreeEvents() {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const relPath = btn.dataset.path;
-      // Build a full path: folderName/relativePath
-      const fullPath = state.folderName ? state.folderName + '/' + relPath : relPath;
+      // Build the full disk path: rootPath/relativePath
+      let fullPath = relPath;
+      if (state.folderRootPath) {
+        fullPath = state.folderRootPath + '/' + relPath;
+      } else if (state.folderName) {
+        fullPath = state.folderName + '/' + relPath;
+      }
+      // Convert to Windows-style backslashes if root path looks like a Windows path
+      if (/^[A-Za-z]:/.test(state.folderRootPath)) {
+        fullPath = fullPath.replace(/\//g, '\\');
+      }
       await navigator.clipboard.writeText(fullPath);
       const origHTML = btn.innerHTML;
       btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 15 15" fill="none"><path d="M2 8l3.5 3.5L13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -861,6 +892,14 @@ async function openFile(path) {
 
   state.currentPath = path;
   state.currentHandle = info.handle;
+  // Build full disk path for copy-path when a folder root is known
+  if (state.folderRootPath) {
+    let fp = state.folderRootPath + '/' + path;
+    if (/^[A-Za-z]:/.test(state.folderRootPath)) fp = fp.replace(/\//g, '\\');
+    state.currentFullPath = fp;
+  } else {
+    state.currentFullPath = path;
+  }
   dom.editSplitBtn.classList.remove('hidden');
 
   try {
@@ -870,7 +909,7 @@ async function openFile(path) {
     renderDocument(path, info.name, text);
     addRecent(path, info.name);
     updateActiveTreeItem(path);
-    dom.filePathDisplay.textContent = path;
+    dom.filePathDisplay.textContent = state.currentFullPath || path;
     startHotReload();
   } catch (e) {
     console.error('Failed to read file:', e);
