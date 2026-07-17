@@ -243,6 +243,21 @@ async function findFileInTree(dirHandle, targetName, prefix = '') {
   return null;
 }
 
+// Synchronous search through the already-built tree
+function findFileInTreeSync(tree, targetName) {
+  if (!tree) return null;
+  // Check files at this level
+  for (const f of (tree.files || [])) {
+    if (f.name === targetName) return f.path;
+  }
+  // Recurse into subdirectories
+  for (const dir of Object.values(tree.children || {})) {
+    const found = findFileInTreeSync(dir, targetName);
+    if (found) return found;
+  }
+  return null;
+}
+
 // ── Settings ───────────────────────────────────────────────────
 
 async function loadSettings() {
@@ -361,7 +376,16 @@ function renderRecentList() {
   dom.recentList.querySelectorAll('.recent-item').forEach(el => {
     el.addEventListener('click', () => {
       const path = el.dataset.path;
-      if (state.files.has(path)) openFile(path);
+      if (state.files.has(path)) {
+        openFile(path);
+      } else if (singleFileMode && state.folderHandle) {
+        // Single-file mode with a mounted folder — find the file by name
+        const name = path.split('/').pop();
+        const fullPath = findFileInTreeSync(state.tree, name);
+        if (fullPath && state.files.has(fullPath)) {
+          openFile(fullPath);
+        }
+      }
     });
   });
 }
@@ -918,7 +942,14 @@ function renderTOC(headings) {
     a.addEventListener('click', e => {
       e.preventDefault();
       const el = document.getElementById(a.dataset.id);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (!el) return;
+      const viewer = document.getElementById('viewer');
+      // scroll the heading into view, offset below the sticky content-header
+      const headerH = dom.contentHeader?.offsetHeight || 0;
+      viewer.scrollTo({
+        top: el.offsetTop - headerH - 8,
+        behavior: 'smooth'
+      });
     });
   });
 }
@@ -1495,6 +1526,10 @@ function markEditorUnsaved() {
 
 function enterInlineEditMode() {
   if (state.editMode) exitEditMode();
+  if (!state.currentHandle) {
+    if (singleFileMode) alert(I18n.t('editor.needFolder'));
+    return;
+  }
   if (!state.currentPath) return;
   state.inlineEditMode = true;
   dom.content.classList.add('inline-edit-active');
