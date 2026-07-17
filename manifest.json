@@ -14,7 +14,7 @@
         "file://**/*.mdown",
         "file://**/*.mkd"
       ],
-      "js": ["lib/highlighter.js", "lib/markdown.js", "lib/mermaid.min.js", "content.js"],
+      "js": ["content.js"],
       "run_at": "document_end",
       "all_frames": false
     }
@@ -36,5 +36,11 @@
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["app.html", "app.css", "app.js", "lib/*", "icons/*"],
+      "matches": ["file:///*", "<all_urls>"]
+    }
+  ]
 }

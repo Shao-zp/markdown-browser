@@ -131,6 +131,12 @@ async function init() {
   bindEvents();
   renderRecentList();
 
+  // Single-file mode: opened a .md directly via file:// redirect
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') === 'single') {
+    return initSingleFile();
+  }
+
   // Try to restore last folder handle from IndexedDB
   try {
     const saved = await idbGet('folderHandle');
@@ -141,6 +147,77 @@ async function init() {
       }
     }
   } catch (_) {}
+}
+
+// ── Single-file mode ───────────────────────────────────────────
+
+async function initSingleFile() {
+  const data = await chromeGet('singleFile');
+  if (!data || !data.raw) {
+    // No pending file — show welcome screen
+    return;
+  }
+  const { raw, filename } = data;
+
+  // Clean up the temporary storage
+  chrome.storage.local.remove('singleFile');
+
+  // Render the document immediately so the user sees content
+  renderDocument(filename, filename, raw);
+  dom.filePathDisplay.textContent = filename;
+  dom.editSplitBtn.classList.remove('hidden');
+  dom.contentHeader.classList.remove('hidden');
+
+  // Prompt the user to select the parent directory of the dropped file.
+  // This gives us a real FileSystemDirectoryHandle → full editing, saving,
+  // sibling file listing, recent files, search index, etc.
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await mountFolder(dirHandle);
+    await idbSet('folderHandle', dirHandle);
+
+    // Try to find the dropped file inside the selected directory
+    const fullPath = await findFileInTree(dirHandle, filename);
+    if (fullPath) {
+      state.currentPath = fullPath;
+      state.currentHandle = state.files.get(fullPath)?.handle || null;
+      const info = state.files.get(fullPath);
+      if (info) {
+        const file = await info.handle.getFile();
+        state.currentLastModified = file.lastModified;
+        const text = await file.text();
+        renderDocument(fullPath, info.name, text);
+        dom.filePathDisplay.textContent = fullPath;
+        addRecent(fullPath, info.name);
+        updateActiveTreeItem(fullPath);
+        startHotReload();
+      }
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error('Single-file folder pick failed:', e);
+    // User dismissed the picker — stay in read-only mode
+    dom.folderBreadcrumb.classList.add('hidden');
+    dom.btnNewFile.classList.add('hidden');
+    dom.btnRefreshFolder.classList.add('hidden');
+    dom.fileTree.innerHTML = '<div class="empty-state"><p>' + I18n.t('sidebar.noFolder') + '</p></div>';
+  }
+}
+
+// ── Find a file by name inside a directory tree ────────────────
+
+async function findFileInTree(dirHandle, targetName, prefix = '') {
+  for await (const [name, entry] of dirHandle.entries()) {
+    const path = prefix ? `${prefix}/${name}` : name;
+    if (entry.kind === 'directory') {
+      if (!name.startsWith('.') && name !== 'node_modules' && name !== '.git') {
+        const found = await findFileInTree(entry, targetName, path);
+        if (found) return found;
+      }
+    } else if (name === targetName) {
+      return path;
+    }
+  }
+  return null;
 }
 
 // ── Settings ───────────────────────────────────────────────────
@@ -1156,11 +1233,16 @@ function initResizeHandle() {
 async function enterEditMode() {
   if (!state.currentHandle) return;
   if (state.inlineEditMode) exitInlineEditMode(true);
+  // requestPermission is needed for handles from showDirectoryPicker,
+  // but not for handles from showOpenFilePicker (already granted).
+  // Wrap in try/catch so both paths work.
   try {
-    const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
-    if (perm !== 'granted') return;
+    if (state.currentHandle.requestPermission) {
+      const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') return;
+    }
   } catch (e) {
-    return;
+    // Handle doesn't support requestPermission (e.g. showOpenFilePicker) — continue
   }
 
   stopHotReload();
@@ -1170,7 +1252,7 @@ async function enterEditMode() {
   const file = await state.currentHandle.getFile();
   const text = await file.text();
 
-  dom.editorFilename.textContent = state.files.get(state.currentPath)?.name || '';
+  dom.editorFilename.textContent = state.files.get(state.currentPath)?.name || state.currentPath || '';
   dom.editorTextarea.value = text;
   dom.editorUnsaved.classList.add('hidden');
   dom.editorUnsaved.textContent = '';
