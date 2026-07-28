@@ -1559,10 +1559,6 @@ function markEditorUnsaved() {
 
 function enterInlineEditMode() {
   if (state.editMode) exitEditMode();
-  if (!state.currentHandle) {
-    if (singleFileMode) alert(I18n.t('editor.needFolder'));
-    return;
-  }
   if (!state.currentPath) return;
   state.inlineEditMode = true;
   dom.content.classList.add('inline-edit-active');
@@ -1704,9 +1700,13 @@ function reconstructMarkdown() {
 }
 
 async function saveInlineEdits() {
-  if (!state.currentHandle || !state.inlineEditMode) return;
+  if (!state.inlineEditMode) return;
   if (state.activeBlockEditor) commitBlockEdit();
   if (!state.inlineUnsaved) return;
+  if (!state.currentHandle) {
+    if (singleFileMode) alert(I18n.t('editor.needFolder'));
+    return;
+  }
 
   try {
     const perm = await state.currentHandle.requestPermission({ mode: 'readwrite' });
