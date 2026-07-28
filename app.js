@@ -1568,9 +1568,6 @@ function enterInlineEditMode() {
 
 function exitInlineEditMode(skipConfirm = false) {
   if (state.activeBlockEditor) commitBlockEdit();
-  if (state.inlineUnsaved && !skipConfirm) {
-    if (!confirm(I18n.t('editor.discardInlineConfirm'))) return false;
-  }
   state.inlineEditMode = false;
   state.inlineUnsaved = false;
   dom.content.classList.remove('inline-edit-active');
