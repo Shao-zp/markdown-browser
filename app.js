@@ -610,9 +610,9 @@ async function refreshFolder() {
       try {
         const file = await info.handle.getFile();
         const content = await file.text();
-        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase(), rawContent: content });
+        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase() });
       } catch (_) {
-        state.searchIndex.push({ path: p, name: info.name, content: '', rawContent: '' });
+        state.searchIndex.push({ path: p, name: info.name, content: '' });
       }
     }
 
@@ -679,9 +679,9 @@ async function checkFolderChanges() {
       try {
         const file = await info.handle.getFile();
         const content = await file.text();
-        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase(), rawContent: content });
+        state.searchIndex.push({ path: p, name: info.name, content: content.toLowerCase() });
       } catch (_) {
-        state.searchIndex.push({ path: p, name: info.name, content: '', rawContent: '' });
+        state.searchIndex.push({ path: p, name: info.name, content: '' });
       }
     }
   } catch (e) {
@@ -866,7 +866,12 @@ async function deleteFile(path) {
 
 async function openFile(path) {
   const info = state.files.get(path);
-  if (!info) return;
+  if (!info) {
+    // File was removed from the tree (deleted externally) — tell the user
+    dom.statusModified.textContent = I18n.t('file.notFound', path);
+    setTimeout(() => { dom.statusModified.textContent = ''; }, 2500);
+    return;
+  }
 
   if (state.editMode && !exitEditMode()) return;
 
@@ -1080,14 +1085,22 @@ async function checkForChanges() {
 
 async function buildSearchIndex() {
   state.searchIndex = [];
-  for (const [path, info] of state.files) {
-    try {
-      const file = await info.handle.getFile();
-      const content = await file.text();
-      state.searchIndex.push({ path, name: info.name, content: content.toLowerCase(), rawContent: content });
-    } catch (_) {
-      state.searchIndex.push({ path, name: info.name, content: '', rawContent: '' });
-    }
+  const entries = [...state.files.entries()];
+  // Process in batches so large folders don't block the UI
+  const BATCH = 20;
+  for (let i = 0; i < entries.length; i += BATCH) {
+    const batch = entries.slice(i, i + BATCH);
+    await Promise.all(batch.map(async ([path, info]) => {
+      try {
+        const file = await info.handle.getFile();
+        const content = await file.text();
+        state.searchIndex.push({ path, name: info.name, content: content.toLowerCase() });
+      } catch (_) {
+        state.searchIndex.push({ path, name: info.name, content: '' });
+      }
+    }));
+    // Yield to the main thread between batches
+    await new Promise(res => setTimeout(res, 0));
   }
   state.indexBuilt = true;
   if (state.currentPath) renderBacklinks(state.currentPath);
@@ -1111,8 +1124,12 @@ function closePalette() {
   dom.paletteInput.value = '';
 }
 
-function renderPaletteResults(query) {
+// Guard against stale async search results overwriting newer ones
+let searchSeq = 0;
+
+async function renderPaletteResults(query) {
   const q = query.trim().toLowerCase();
+  const mySeq = ++searchSeq;
   const items = [];
 
   if (!q) {
@@ -1144,23 +1161,32 @@ function renderPaletteResults(query) {
       items.push(...nameMatches.slice(0, 8));
     }
 
-    // Full-text matches
+    // Full-text matches — snippet loaded on demand (no full content cached)
     if (state.indexBuilt) {
-      const contentMatches = [];
-      for (const entry of state.searchIndex) {
-        if (entry.content.includes(q)) {
-          const idx = entry.content.indexOf(q);
-          const start = Math.max(0, idx - 40);
-          const snippet = entry.rawContent.slice(start, start + 120).replace(/\n/g, ' ');
-          contentMatches.push({ type: 'content', path: entry.path, name: entry.name, snippet, query: q });
+      const matchedEntries = state.searchIndex.filter(e => e.content.includes(q));
+      const contentMatches = await Promise.all(matchedEntries.slice(0, 6).map(async entry => {
+        let snippet = '';
+        const info = state.files.get(entry.path);
+        if (info) {
+          try {
+            const file = await info.handle.getFile();
+            const raw = await file.text();
+            const idx = raw.toLowerCase().indexOf(q);
+            const start = Math.max(0, idx - 40);
+            snippet = raw.slice(start, start + 120).replace(/\n/g, ' ');
+          } catch (_) {}
         }
-      }
+        return { type: 'content', path: entry.path, name: entry.name, snippet, query: q };
+      }));
       if (contentMatches.length) {
         items.push({ section: I18n.t('palette.inFiles') });
         items.push(...contentMatches.slice(0, 6));
       }
     }
   }
+
+  // If a newer search started while we were reading files, drop this result
+  if (mySeq !== searchSeq) return;
 
   if (items.filter(i => i.type).length === 0) {
     dom.paletteResults.innerHTML = '<div class="empty-state" style="padding:24px"><p>' + I18n.t('palette.noResults') + '</p></div>';
@@ -1434,7 +1460,7 @@ async function confirmNewFile() {
     await writable.close();
 
     state.files.set(name, { handle: fileHandle, name, dir: '', lastModified: 0 });
-    state.searchIndex.push({ path: name, name, content: '', rawContent: '' });
+    state.searchIndex.push({ path: name, name, content: '' });
     state.tree = buildTree();
     renderFileTree(state.tree);
 
@@ -1757,7 +1783,7 @@ function renderBacklinks(currentPath) {
   const matches = [];
   for (const entry of state.searchIndex) {
     if (entry.path === currentPath) continue;
-    if (re.test(entry.rawContent)) matches.push({ path: entry.path, name: entry.name });
+    if (re.test(entry.content)) matches.push({ path: entry.path, name: entry.name });
   }
 
   if (!matches.length) { panel.innerHTML = ''; return; }
