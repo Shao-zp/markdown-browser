@@ -915,6 +915,9 @@ function renderDocument(path, name, text, preserveScroll = false) {
   dom.contentHeader.classList.remove('hidden');
   dom.content.innerHTML = html;
 
+  // Resolve relative image paths to blob URLs (images live next to the .md file)
+  resolveLocalImages();
+
   // Inline edit mode — re-attach block handlers after each render
   if (state.inlineEditMode) attachAllBlockHandlers();
 
@@ -960,6 +963,55 @@ function renderDocument(path, name, text, preserveScroll = false) {
 
   viewer.scrollTop = savedScroll;
   if (!preserveScroll) dom.statusModified.textContent = '';
+}
+
+// ── Local image resolution ────────────────────────────────────
+// Relative image paths in markdown (e.g. images/foo.png) point to
+// files next to the .md document. The extension page can't load them
+// via URL, so we read them through the folder handle and swap in blob URLs.
+
+async function resolveLocalImages() {
+  if (!state.folderHandle || !state.currentPath) return;
+  const imgs = dom.content.querySelectorAll('img');
+  if (!imgs.length) return;
+
+  // Directory of the current file, e.g. "docs/guide.md" → "docs"
+  const fileDir = state.currentPath.includes('/')
+    ? state.currentPath.slice(0, state.currentPath.lastIndexOf('/'))
+    : '';
+
+  for (const img of imgs) {
+    const src = img.getAttribute('src');
+    if (!src || /^(https?:|data:|blob:|chrome-extension:)/i.test(src)) continue;
+
+    // Normalize the relative path (collapse ./ and ../ against fileDir)
+    const segs = (fileDir ? fileDir.split('/') : []).concat(src.split('/'));
+    const out = [];
+    for (const seg of segs) {
+      if (!seg || seg === '.') continue;
+      if (seg === '..') { out.pop(); }
+      else out.push(seg);
+    }
+    const rel = out.join('/');
+    if (!rel) continue;
+
+    try {
+      const fileHandle = await getFileHandleByRelPath(rel);
+      const file = await fileHandle.getFile();
+      img.src = URL.createObjectURL(file);
+    } catch (_) {
+      // Image not found — leave broken state, alt text still shows
+    }
+  }
+}
+
+async function getFileHandleByRelPath(rel) {
+  let handle = state.folderHandle;
+  const segs = rel.split('/');
+  for (let i = 0; i < segs.length - 1; i++) {
+    handle = await handle.getDirectoryHandle(segs[i]);
+  }
+  return handle.getFileHandle(segs[segs.length - 1]);
 }
 
 // ── Table of Contents ──────────────────────────────────────────
