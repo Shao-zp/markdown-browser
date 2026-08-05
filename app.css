@@ -1032,14 +1032,39 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   margin: 2.5em 0;
 }
 
-/* Images */
+/* Images — default preview capped at a comfortable size, click to zoom */
 #content img {
-  max-width: 100%;
+  max-width: min(100%, 720px);
   height: auto;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   display: block;
   margin: 1em auto;
+  cursor: zoom-in;
+}
+
+/* Image lightbox */
+#image-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  user-select: none;
+}
+#image-lightbox.visible { display: flex; }
+#image-lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
+  border: none;
+  margin: 0;
+  cursor: zoom-out;
 }
 
 /* Front matter panel */

@@ -121,6 +121,9 @@ const dom = {
   backlinksPanel:   $('backlinks-panel'),
   // Sticky content header
   contentHeader:    $('content-header'),
+  // Image lightbox
+  imageLightbox:    $('image-lightbox'),
+  imageLightboxImg: $('image-lightbox-img'),
 };
 
 // ── Init ───────────────────────────────────────────────────────
@@ -1932,6 +1935,20 @@ function bindEvents() {
   if (dom.btnOpenFile) dom.btnOpenFile.addEventListener('click', openFileHandle);
   dom.btnRefreshFolder.addEventListener('click', refreshFolder);
 
+  // Image lightbox — click any rendered image to zoom (event delegation,
+  // survives re-renders)
+  dom.content.addEventListener('click', e => {
+    if (e.target.tagName === 'IMG' && e.target.src) {
+      dom.imageLightboxImg.src = e.target.src;
+      dom.imageLightboxImg.alt = e.target.alt || '';
+      dom.imageLightbox.classList.add('visible');
+    }
+  });
+  dom.imageLightbox.addEventListener('click', () => {
+    dom.imageLightbox.classList.remove('visible');
+    dom.imageLightboxImg.src = '';
+  });
+
   // Edit split button: main click = inline edit, caret = dropdown
   dom.btnInlineEdit.addEventListener('click', () => {
     dom.editDropdown.classList.add('hidden');
@@ -2111,6 +2128,11 @@ function bindEvents() {
     if (mod && e.key === 'f' && state.editMode) { e.preventDefault(); openFindReplace(); return; }
     if (e.key === 'Escape') {
       if (!dom.findBar.classList.contains('hidden')) { closeFindReplace(); return; }
+      if (dom.imageLightbox.classList.contains('visible')) {
+        dom.imageLightbox.classList.remove('visible');
+        dom.imageLightboxImg.src = '';
+        return;
+      }
       closePalette();
       closeSettings();
     }
