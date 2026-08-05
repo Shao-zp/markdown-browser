@@ -178,6 +178,9 @@ async function initSingleFile() {
   dom.editSplitBtn.classList.remove('hidden');
   dom.contentHeader.classList.remove('hidden');
 
+  // Try to restore the folder handle (image reading only — UI unchanged)
+  tryRestoreFolderForSingleFile();
+
   // Single-file mode: no folder mounted, no file tree.
   // User can open a folder via the sidebar button if desired.
   dom.folderBreadcrumb.classList.add('hidden');
@@ -206,6 +209,8 @@ async function initSingleFile() {
         singleFileMode = false;
         await mountFolder(dirHandle);
         await idbSet('folderHandle', dirHandle);
+        // Re-locate the current file so relative image paths resolve
+        await locateCurrentFile();
       } catch (e) {
         if (e.name !== 'AbortError') console.error('Folder pick failed:', e);
       }
@@ -243,6 +248,48 @@ function findFileInTreeSync(tree, targetName) {
     if (found) return found;
   }
   return null;
+}
+
+// ── Single-file image support ─────────────────────────────────
+// In single-file mode there is no mounted folder, so relative image
+// paths can't be resolved. These helpers restore the last folder
+// handle (image reading only — UI stays in single-file mode) and
+// locate the current file's relative path inside it.
+
+// Locate the current file in the folder, updating currentPath to its
+// relative path so relative image paths resolve correctly.
+async function locateCurrentFile() {
+  if (!state.folderHandle || !state.currentPath) return false;
+  const filename = state.currentPath.split('/').pop();
+  if (!filename) return false;
+  const relPath = await findFileInTree(state.folderHandle, filename);
+  if (!relPath) return false;
+  try {
+    const fh = await getFileHandleByRelPath(relPath);
+    const file = await fh.getFile();
+    const text = await file.text();
+    state.currentPath = relPath;
+    state.currentHandle = fh;
+    state.currentLastModified = file.lastModified;
+    renderDocument(relPath, file.name, text);
+    dom.filePathDisplay.textContent = relPath;
+    updateActiveTreeItem(relPath);
+    return true;
+  } catch (_) { return false; }
+}
+
+// Restore the last folder handle solely for reading images.
+// Does NOT mount the folder UI (no file tree shown).
+async function tryRestoreFolderForSingleFile() {
+  if (state.folderHandle) return;
+  try {
+    const saved = await idbGet('folderHandle');
+    if (!saved) return;
+    const perm = await saved.queryPermission({ mode: 'read' });
+    if (perm !== 'granted') return;
+    state.folderHandle = saved;
+    await locateCurrentFile();
+  } catch (_) {}
 }
 
 // ── Settings ───────────────────────────────────────────────────
@@ -561,6 +608,9 @@ async function openSingleFile(handle) {
   switchSidebarTab('files');
 
   await openFile(path);
+
+  // Try to restore folder handle so relative images can be resolved
+  tryRestoreFolderForSingleFile();
 }
 
 // ── Folder refresh ─────────────────────────────────────────────
