@@ -46,6 +46,8 @@ const $ = id => document.getElementById(id);
 const dom = {
   btnOpen:          $('btn-open'),          // sidebar open button
   btnToggleSidebar: $('btn-toggle-sidebar'),
+  iconSidebarOpen:  $('icon-sidebar-open'),
+  iconSidebarClosed: $('icon-sidebar-closed'),
   btnSearch:        $('btn-search'),
   btnTheme:         $('btn-theme'),
   iconMoon:         $('icon-moon'),
@@ -315,6 +317,10 @@ function applySettings() {
   if (dom.fileMeta) dom.fileMeta.style.maxWidth = widthVal;
   if (dom.backlinksPanel) dom.backlinksPanel.style.maxWidth = widthVal;
   dom.sidebar.classList.toggle('collapsed', !!s.sidebarCollapsed);
+  if (dom.iconSidebarOpen && dom.iconSidebarClosed) {
+    dom.iconSidebarOpen.style.display = s.sidebarCollapsed ? 'none' : '';
+    dom.iconSidebarClosed.style.display = s.sidebarCollapsed ? '' : 'none';
+  }
   const fontMap = { sans: 'var(--font-reading-sans)', serif: 'var(--font-serif)', mono: 'var(--font-mono)' };
   document.documentElement.style.setProperty('--reading-font', fontMap[s.fontFamily] || fontMap.sans);
   dom.fontSizeDisplay.textContent = s.fontSize + 'px';
@@ -341,8 +347,16 @@ function toggleTheme() {
 
 function toggleSidebar() {
   state.settings.sidebarCollapsed = !state.settings.sidebarCollapsed;
-  dom.sidebar.classList.toggle('collapsed', state.settings.sidebarCollapsed);
+  applySidebarCollapsed(state.settings.sidebarCollapsed);
   saveSettings();
+}
+
+function applySidebarCollapsed(collapsed) {
+  dom.sidebar.classList.toggle('collapsed', collapsed);
+  if (dom.iconSidebarOpen && dom.iconSidebarClosed) {
+    dom.iconSidebarOpen.style.display = collapsed ? 'none' : '';
+    dom.iconSidebarClosed.style.display = collapsed ? '' : 'none';
+  }
 }
 
 // ── Chrome storage helpers ──────────────────────────────────────

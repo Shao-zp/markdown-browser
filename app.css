@@ -520,6 +520,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 /* Recent files */
 #recent-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+#recent-list::-webkit-scrollbar { width: 4px; }
+#recent-list::-webkit-scrollbar-track { background: transparent; }
+#recent-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+#recent-list::-webkit-scrollbar-thumb:hover { background: var(--bg-4); }
 .recent-item {
   display: flex;
   flex-direction: column;
@@ -1034,7 +1038,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 /* Images — default preview capped at a comfortable size, click to zoom */
 #content img {
-  max-width: min(100%, 720px);
+  max-width: min(100%, 520px);
   height: auto;
   border-radius: var(--radius);
   border: 1px solid var(--border);
