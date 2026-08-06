@@ -1051,8 +1051,12 @@ async function resolveLocalImages() {
     const src = img.getAttribute('src');
     if (!src || /^(https?:|data:|blob:|chrome-extension:)/i.test(src)) continue;
 
+    // Decode URL-encoded paths (e.g. assets/%E7%A7%9F...png for Chinese filenames)
+    let decoded;
+    try { decoded = decodeURIComponent(src); } catch (_) { decoded = src; }
+
     // Normalize the relative path (collapse ./ and ../ against fileDir)
-    const segs = (fileDir ? fileDir.split('/') : []).concat(src.split('/'));
+    const segs = (fileDir ? fileDir.split('/') : []).concat(decoded.split('/'));
     const out = [];
     for (const seg of segs) {
       if (!seg || seg === '.') continue;
