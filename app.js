@@ -346,6 +346,42 @@ function initMermaid() {
   });
 }
 
+// Mermaid 11 的 flowchart 自动换行依赖 white-space: break-spaces,
+// 只在空格处断行 —— 中文没有空格所以整句不换行, 长节点会被截断。
+// 这里在渲染前对节点 label 做预处理: 超过 maxWidth 时插入 <br/>。
+function wrapMermaidLabels(src, maxWidth = 12) {
+  const wrap = label => {
+    if (!label || label.includes('<br')) return label;
+    const lines = [];
+    let line = '', lineW = 0;
+    for (const ch of [...label]) {
+      const code = ch.codePointAt(0);
+      const w = ch === ' ' ? 0.35 : (code > 0x2E7F ? 1 : 0.55); // CJK 宽, ASCII 窄
+      if (lineW + w > maxWidth && lineW > 0) {
+        lines.push(line);
+        line = ch === ' ' ? '' : ch;
+        lineW = ch === ' ' ? 0 : w;
+      } else {
+        line += ch;
+        lineW += w;
+      }
+    }
+    if (line.trim()) lines.push(line);
+    return lines.length > 1 ? lines.join('<br/>') : label;
+  };
+  return src
+    .replace(/\[([^\]]*)\]/g, (m, l) => '[' + wrap(l) + ']')
+    .replace(/\{([^}]*)\}/g, (m, l) => '{' + wrap(l) + '}');
+}
+
+function prepareMermaidNodes() {
+  if (typeof mermaid === 'undefined') return;
+  document.querySelectorAll('.mermaid').forEach(el => {
+    const wrapped = wrapMermaidLabels(el.textContent);
+    if (wrapped !== el.textContent) el.textContent = wrapped;
+  });
+}
+
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const isDark = theme === 'dark';
@@ -1035,6 +1071,7 @@ function renderDocument(path, name, text, preserveScroll = false) {
     // Defer to avoid blocking the main render
     requestAnimationFrame(() => {
       try {
+        prepareMermaidNodes();
         mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
       } catch (_) { /* silently ignore render errors */ }
     });
@@ -1850,7 +1887,10 @@ function commitBlockEdit() {
   // Re-render any mermaid diagrams in the replacement
   if (typeof mermaid !== 'undefined') {
     requestAnimationFrame(() => {
-      try { mermaid.run({ nodes: document.querySelectorAll('.mermaid') }); } catch (_) {}
+      try {
+        prepareMermaidNodes();
+        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+      } catch (_) {}
     });
   }
 }
