@@ -135,6 +135,7 @@ async function init() {
   await loadSettings();
   await loadRecent();
   applySettings();
+  initMermaid();
   bindEvents();
   renderRecentList();
 
@@ -329,6 +330,20 @@ function applySettings() {
   dom.reloadIntervalSel.value = String(s.reloadInterval);
   state.reloadMs = s.reloadInterval;
   applyTheme(s.theme);
+}
+
+// ── Mermaid diagrams ───────────────────────────────────────────
+
+// Configure mermaid once. Key option: flowchart.wrappingWidth makes
+// long node labels wrap automatically instead of being clipped.
+function initMermaid() {
+  if (typeof mermaid === 'undefined') return;
+  const isDark = state.settings.theme === 'dark';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: isDark ? 'dark' : 'default',
+    flowchart: { wrappingWidth: 200 },
+  });
 }
 
 function applyTheme(theme) {
