@@ -964,6 +964,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 }
 #content li { margin-bottom: 0.25em; }
 #content li > ul, #content li > ol { margin-bottom: 0; margin-top: 0.2em; }
+/* 有序列表序号由浏览器自动递增（此前每条被拆成独立 <ol>，显示全是 1.） */
+#content ol { list-style: decimal; }
+#content ol li::marker { color: var(--text-2); font-variant-numeric: tabular-nums; }
 #content ul { list-style: none; }
 #content ul li::before {
   content: '·';
@@ -1809,25 +1812,181 @@ input:focus-visible { outline: none; }
    Mermaid diagrams
    ============================================================ */
 
-.mermaid {
-  margin: 16px 0;
-  overflow-x: auto;
-  text-align: center;
+#content .mermaid {
+  position: relative;
+  margin: 20px 0;
+  padding: 0;
   background: var(--bg-2, #fafafa);
-  border-radius: var(--radius, 6px);
-  padding: 16px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
-.mermaid svg {
-  max-width: 100%;
-  height: auto;
+/* 工具栏：默认半透明，悬停整块时完全显现 */
+#content .mermaid-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 34px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-1);
+  opacity: 0.72;
+  transition: opacity var(--t2);
+}
+#content .mermaid-figure:hover .mermaid-toolbar { opacity: 1; }
+
+#content .mermaid-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--t), color var(--t);
+}
+#content .mermaid-btn:hover { background: var(--bg-3); color: var(--text-0); }
+#content .mermaid-btn:disabled { opacity: 0.35; cursor: default; background: transparent; }
+#content .mermaid-btn.ok { color: var(--accent); }
+
+#content .mermaid-zoom-val {
+  min-width: 42px;
+  padding: 0 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: center;
+  color: var(--text-2);
+  user-select: none;
 }
 
-/* Print support for mermaid */
+#content .mermaid-sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 5px;
+  background: var(--border-light);
+}
+
+#content .mermaid-hint {
+  margin-left: auto;
+  padding-right: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* 画布：高度由 JS 按图表高度设定（封顶），溢出裁剪，由 Panzoom 平移 */
+#content .mermaid-canvas {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-2, #fafafa);
+}
+/* 纵向还有内容未显示时，底部渐隐提示可拖拽 */
+#content .mermaid-canvas::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t2);
+  background: linear-gradient(to top, var(--bg-2, #fafafa) 12%, transparent);
+}
+#content .mermaid-canvas::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 44px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t2);
+  background: linear-gradient(to bottom, var(--bg-2, #fafafa) 12%, transparent);
+  z-index: 1;
+}
+#content .mermaid-figure.is-clipped .mermaid-canvas::after { opacity: 1; }
+#content .mermaid-figure.is-clipped-top .mermaid-canvas::before { opacity: 1; }
+#content .mermaid-canvas svg {
+  display: block;
+  cursor: grab;
+  /* transform-origin 由 Panzoom 设为 50% 50%，不要在 CSS 里覆盖它 */
+}
+#content .mermaid-canvas svg:active { cursor: grabbing; }
+/* 拖拽中统一抓取光标（Panzoom 把 cursor 设在画布上，需一并覆盖） */
+#content .mermaid-figure.is-panning .mermaid-canvas,
+#content .mermaid-figure.is-panning .mermaid-canvas svg { cursor: grabbing; }
+
+/* 全屏查看 */
+#content .mermaid-figure:fullscreen {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--bg-1);
+}
+#content .mermaid-figure:fullscreen .mermaid-canvas {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0;
+}
+#content .mermaid-figure:fullscreen .mermaid-toolbar { opacity: 1; }
+
+/* 语法错误降级 */
+#content .mermaid-error {
+  border-color: var(--accent-border, rgba(212, 98, 42, 0.35));
+  background: var(--accent-dim, rgba(212, 98, 42, 0.08));
+  padding: 12px 14px;
+}
+#content .mermaid-error-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+#content .mermaid-error-src {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* Print support for mermaid: 去掉工具栏与缩放位移，按原始尺寸排版 */
 @media print {
-  .mermaid {
+  #content .mermaid {
     background: #fff !important;
+    border-color: #ddd !important;
     padding: 8px !important;
+    overflow: visible !important;
+  }
+  #content .mermaid-toolbar { display: none !important; }
+  #content .mermaid-canvas {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  #content .mermaid-canvas svg {
+    width: auto !important;
+    height: auto !important;
+    max-width: 100% !important;
+    transform: none !important;
   }
 }
 

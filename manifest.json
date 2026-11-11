@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Markdown Browser",
-  "version": "2.1.0",
+  "version": "2.4.1",
   "description": "Read, write, and search local markdown files. Inline editing, wiki-links, callout blocks, full-text search — 100% offline & private.",
   "homepage_url": "https://markdownbrowser.abhikuchbhi.in",
   "permissions": ["storage", "tabs"],

@@ -334,15 +334,185 @@ function applySettings() {
 
 // ── Mermaid diagrams ───────────────────────────────────────────
 
+const MERMAID_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif";
+// 超过这个高度就固定画布高度，改用缩放/拖拽查看，避免超高示意图把正文顶下去
+const MERMAID_MAX_CANVAS_H = 520;
+
+// Mermaid 主题变量：与 app.css 的 :root 设计变量对齐（暖色 Anthropic 调性）。
+// 必须用 base 主题 + 变量覆盖 —— default/dark 主题自带的蓝紫配色是“丑”的主因。
+function mermaidThemeVars(isDark) {
+  const base = {
+    background: 'transparent',
+    fontFamily: MERMAID_FONT,
+    fontSize: '14px',
+    pieTitleTextSize: '16px',
+    pieSectionTextSize: '13px',
+    pieLegendTextSize: '13px',
+  };
+
+  if (isDark) return Object.assign(base, {
+    darkMode: true,
+    primaryColor:        '#2D2925',
+    primaryTextColor:    '#F5F0EA',
+    primaryBorderColor:  '#D4622A',
+    secondaryColor:      '#3A3530',
+    secondaryTextColor:  '#F5F0EA',
+    secondaryBorderColor:'#4A443E',
+    tertiaryColor:       '#221F1C',
+    tertiaryTextColor:   '#C8C0B6',
+    tertiaryBorderColor: '#3A3530',
+    lineColor:           '#8C8680',
+    textColor:           '#C8C0B6',
+    mainBkg:             '#2D2925',
+    nodeBorder:          '#D4622A',
+    nodeTextColor:       '#F5F0EA',
+    clusterBkg:          'rgba(212, 98, 42, 0.09)',
+    clusterBorder:       '#3A3530',
+    titleColor:          '#F5F0EA',
+    edgeLabelBackground: '#1A1816',
+    labelBackgroundColor:'#1A1816',
+    // 时序图
+    actorBkg:            '#2D2925',
+    actorBorder:         '#D4622A',
+    actorTextColor:      '#F5F0EA',
+    actorLineColor:      '#5A554F',
+    signalColor:         '#C8C0B6',
+    signalTextColor:     '#C8C0B6',
+    labelBoxBkgColor:    '#3A3530',
+    labelBoxBorderColor: '#D4622A',
+    labelTextColor:      '#F5F0EA',
+    loopTextColor:       '#C8C0B6',
+    noteBkgColor:        '#3A3530',
+    noteBorderColor:     '#D4622A',
+    noteTextColor:       '#F5F0EA',
+    activationBkgColor:  '#3A3530',
+    activationBorderColor:'#D4622A',
+    sequenceNumberColor: '#1A1816',
+    // 甘特图
+    sectionBkgColor:     '#221F1C',
+    altSectionBkgColor:  '#1A1816',
+    sectionBkgColor2:    '#221F1C',
+    taskBkgColor:        '#3A3530',
+    taskBorderColor:     '#D4622A',
+    taskTextColor:       '#F5F0EA',
+    taskTextDarkColor:   '#F5F0EA',
+    taskTextLightColor:  '#F5F0EA',
+    taskTextOutsideColor:'#C8C0B6',
+    activeTaskBkgColor:  '#D4622A',
+    activeTaskBorderColor:'#E07848',
+    doneTaskBkgColor:    '#3A3530',
+    doneTaskBorderColor: '#5A554F',
+    critBkgColor:        '#B3453C',
+    critBorderColor:     '#E07848',
+    todayLineColor:      '#D4622A',
+    gridColor:           '#3A3530',
+    // 饼图 / 象限图
+    pie1: '#D4622A', pie2: '#E07848', pie3: '#8C8680', pie4: '#5A554F',
+    pie5: '#C4541E', pie6: '#B3453C', pie7: '#7A9E7E', pie8: '#C9A227',
+    pieStrokeColor: '#1A1816', pieOuterStrokeColor: '#3A3530',
+  });
+
+  return Object.assign(base, {
+    darkMode: false,
+    primaryColor:        '#FDF2EA',
+    primaryTextColor:    '#1F1B18',
+    primaryBorderColor:  '#C4541E',
+    secondaryColor:      '#F4F1EE',
+    secondaryTextColor:  '#1F1B18',
+    secondaryBorderColor:'#D9D3CC',
+    tertiaryColor:       '#FBF9F7',
+    tertiaryTextColor:   '#333333',
+    tertiaryBorderColor: '#E5E5E5',
+    lineColor:           '#9A9490',
+    textColor:           '#333333',
+    mainBkg:             '#FDF2EA',
+    nodeBorder:          '#C4541E',
+    nodeTextColor:       '#1F1B18',
+    clusterBkg:          'rgba(196, 84, 30, 0.05)',
+    clusterBorder:       '#E0D6CE',
+    titleColor:          '#111111',
+    edgeLabelBackground: '#FFFFFF',
+    labelBackgroundColor:'#FFFFFF',
+    // 时序图
+    actorBkg:            '#FDF2EA',
+    actorBorder:         '#C4541E',
+    actorTextColor:      '#1F1B18',
+    actorLineColor:      '#C9C2BA',
+    signalColor:         '#5A554F',
+    signalTextColor:     '#333333',
+    labelBoxBkgColor:    '#F4F1EE',
+    labelBoxBorderColor: '#C4541E',
+    labelTextColor:      '#1F1B18',
+    loopTextColor:       '#333333',
+    noteBkgColor:        '#FBF1E0',
+    noteBorderColor:     '#D9A05B',
+    noteTextColor:       '#1F1B18',
+    activationBkgColor:  '#F4F1EE',
+    activationBorderColor:'#C4541E',
+    sequenceNumberColor: '#FFFFFF',
+    // 甘特图
+    sectionBkgColor:     '#FBF9F7',
+    altSectionBkgColor:  '#F4F1EE',
+    sectionBkgColor2:    '#FBF9F7',
+    taskBkgColor:        '#F0E4DA',
+    taskBorderColor:     '#C4541E',
+    taskTextColor:       '#1F1B18',
+    taskTextDarkColor:   '#1F1B18',
+    taskTextLightColor:  '#1F1B18',
+    taskTextOutsideColor:'#333333',
+    activeTaskBkgColor:  '#C4541E',
+    activeTaskBorderColor:'#D4622A',
+    doneTaskBkgColor:    '#E6E1DC',
+    doneTaskBorderColor: '#B9B2AA',
+    critBkgColor:        '#C4541E',
+    critBorderColor:     '#8F3A12',
+    todayLineColor:      '#C4541E',
+    gridColor:           '#E5E5E5',
+    // 饼图 / 象限图
+    pie1: '#C4541E', pie2: '#D4622A', pie3: '#9A9490', pie4: '#B9B2AA',
+    pie5: '#8F3A12', pie6: '#B3453C', pie7: '#5F7F63', pie8: '#A8851F',
+    pieStrokeColor: '#FFFFFF', pieOuterStrokeColor: '#E5E5E5',
+  });
+}
+
 // Configure mermaid once. Key option: flowchart.wrappingWidth makes
 // long node labels wrap automatically instead of being clipped.
+// useMaxWidth: false 让 mermaid 输出固定像素宽高，便于后续做缩放/平移。
 function initMermaid() {
   if (typeof mermaid === 'undefined') return;
   const isDark = state.settings.theme === 'dark';
   mermaid.initialize({
     startOnLoad: false,
-    theme: isDark ? 'dark' : 'default',
-    flowchart: { wrappingWidth: 200 },
+    theme: 'base',
+    themeVariables: mermaidThemeVars(isDark),
+    fontFamily: MERMAID_FONT,
+    // 节点圆角 + 引用标签底色，配合 app.css 让图形更柔和
+    themeCSS: [
+      '.node rect, .node circle, .node ellipse, .node polygon { rx: 8px; ry: 8px; }',
+      '.node rect, .node polygon, .node circle, .node ellipse, .node path { stroke-width: 1.4px; }',
+      '.edgeLabel { border-radius: 4px; }',
+      '.cluster rect { rx: 10px; ry: 10px; }',
+    ].join('\n'),
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 14,
+      nodeSpacing: 44,
+      rankSpacing: 48,
+      wrappingWidth: 200,
+      useMaxWidth: false,
+    },
+    sequence: { useMaxWidth: false, mirrorActors: false, actorMargin: 56, boxMargin: 12 },
+    gantt: { useMaxWidth: false, fontSize: 13, sectionFontSize: 13, barHeight: 22, barGap: 6, topPadding: 46 },
+    state: { useMaxWidth: false },
+    class: { useMaxWidth: false },
+    er: { useMaxWidth: false },
+    pie: { useMaxWidth: false },
+    journey: { useMaxWidth: false },
+    gitGraph: { useMaxWidth: false },
+    quadrantChart: { useMaxWidth: false },
+    xyChart: { useMaxWidth: false },
+    timeline: { useMaxWidth: false },
   });
 }
 
@@ -374,11 +544,371 @@ function wrapMermaidLabels(src, maxWidth = 12) {
     .replace(/\{([^}]*)\}/g, (m, l) => '{' + wrap(l) + '}');
 }
 
-function prepareMermaidNodes() {
+function prepareMermaidNodes(nodes) {
   if (typeof mermaid === 'undefined') return;
-  document.querySelectorAll('.mermaid').forEach(el => {
-    const wrapped = wrapMermaidLabels(el.textContent);
+  // 只处理尚未渲染的示意图。mermaid.run 渲染成功后会给元素打上
+  // data-processed 标记；若再次处理已渲染的元素，textContent 读到的
+  // 是 SVG 里的 CSS + 节点文字，会被 wrapMermaidLabels 破坏并覆盖成
+  // 一串原样文本（乱码）。
+  const list = nodes || document.querySelectorAll('.mermaid:not([data-processed])');
+  list.forEach(el => {
+    if (el.dataset.processed === 'true') return;
+    // 记住原始源码（未插换行的版本），供“复制源码”与主题切换后重渲染使用
+    if (!el.dataset.mermaidSrc) el.dataset.mermaidSrc = el.textContent.trim();
+    const wrapped = wrapMermaidLabels(el.dataset.mermaidSrc);
     if (wrapped !== el.textContent) el.textContent = wrapped;
+  });
+}
+
+// 渲染指定的示意图节点，渲染完成后挂上工具栏、缩放与下载能力。
+async function renderMermaidNodes(nodes) {
+  if (typeof mermaid === 'undefined' || !nodes || !nodes.length) return;
+  const list = Array.from(nodes);
+  prepareMermaidNodes(list);
+
+  try {
+    await mermaid.run({ nodes: list, suppressErrors: true });
+  } catch (_) { /* 语法错误等场景在下面统一降级展示 */ }
+
+  list.forEach(el => {
+    const svg = el.querySelector('svg');
+    // mermaid 语法错误时会画一个带 error-icon / error-text 的示意图
+    const failed = !svg || svg.querySelector('.error-icon, .error-text');
+    if (failed) markMermaidError(el);
+    else enhanceMermaidFigure(el, svg);
+  });
+}
+
+// 语法错误：换成友好提示 + 原始源码，避免只显示一个红色炸弹图标
+function markMermaidError(el) {
+  const src = el.dataset.mermaidSrc || '';
+  destroyMermaidFigure(el);
+  el.classList.add('mermaid-error');
+  el.textContent = '';
+
+  const box = document.createElement('div');
+  box.className = 'mermaid-error-box';
+  const title = document.createElement('div');
+  title.className = 'mermaid-error-title';
+  title.textContent = I18n.t('mermaid.error');
+  const pre = document.createElement('pre');
+  pre.className = 'mermaid-error-src';
+  pre.textContent = src;
+  box.append(title, pre);
+  el.appendChild(box);
+}
+
+// 拆掉缩放实例与工具栏痕迹（主题切换重渲染、错误降级时调用）
+function destroyMermaidFigure(el) {
+  if (el._panzoom) {
+    try { el._panzoom.destroy(); } catch (_) {}
+    el._panzoom = null;
+  }
+  el._mermaidFit = null;
+  delete el.dataset.mermaidReady;
+  el.classList.remove('mermaid-figure');
+  // 必须清掉 mermaid 的渲染标记，否则重新渲染时会被跳过
+  el.removeAttribute('data-processed');
+  el.textContent = '';
+}
+
+const MERMAID_ICONS = {
+  out:  '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M4 8h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  in:   '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M8 4v8M4 8h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  fit:  '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M3 6V3h3M13 6V3h-3M3 10v3h3M13 10v3h-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  one:  '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><rect x="3" y="4" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>',
+  full: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  dl:   '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M8 3v7m0 0L5.5 7.5M8 10l2.5-2.5M3.5 12.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  copy: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><rect x="6" y="6" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M10 6V4.5A1.5 1.5 0 008.5 3h-4A1.5 1.5 0 003 4.5v4A1.5 1.5 0 004.5 10H6" stroke="currentColor" stroke-width="1.3"/></svg>',
+};
+
+function mermaidBtn(act, icon, title) {
+  return `<button type="button" class="mermaid-btn" data-act="${act}" title="${escapeAttr(title)}" aria-label="${escapeAttr(title)}">${icon}</button>`;
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+// 给渲染好的示意图套上卡片：工具栏 + 固定高度画布 + Panzoom 缩放平移
+function enhanceMermaidFigure(el, svg) {
+  if (el.dataset.mermaidReady === '1') return;
+
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  const w = Math.max(1, Math.round(parseFloat(svg.getAttribute('width')) || (vb && vb.width) || 600));
+  const h = Math.max(1, Math.round(parseFloat(svg.getAttribute('height')) || (vb && vb.height) || 320));
+
+  el.dataset.mermaidReady = '1';
+  el.classList.add('mermaid-figure');
+  el.classList.remove('mermaid-error');
+
+  // 画布：高度封顶，超出的部分靠缩放/拖拽查看
+  const canvas = document.createElement('div');
+  canvas.className = 'mermaid-canvas';
+  canvas.style.height = Math.min(h, MERMAID_MAX_CANVAS_H) + 'px';
+  svg.parentNode.insertBefore(canvas, svg);
+  canvas.appendChild(svg);
+
+  // 固定为自然尺寸（mermaid 的 useMaxWidth:false 已给出像素宽高），
+  // 初始视图由下面的 fit() 计算，避免宽图被压扁到看不清
+  svg.style.width = w + 'px';
+  svg.style.height = h + 'px';
+  svg.style.maxWidth = 'none';
+  // Panzoom 缩放 SVG <text> 时会出现字重抖动，官方建议加这个属性
+  svg.querySelectorAll('text').forEach(t => t.setAttribute('text-rendering', 'geometricPrecision'));
+
+  const bar = document.createElement('div');
+  bar.className = 'mermaid-toolbar';
+  bar.innerHTML =
+    mermaidBtn('out', MERMAID_ICONS.out, I18n.t('mermaid.zoomOut')) +
+    `<span class="mermaid-zoom-val" title="${escapeAttr(I18n.t('mermaid.zoomHint'))}">100%</span>` +
+    mermaidBtn('in', MERMAID_ICONS.in, I18n.t('mermaid.zoomIn')) +
+    '<span class="mermaid-sep"></span>' +
+    mermaidBtn('fit', MERMAID_ICONS.fit, I18n.t('mermaid.fit')) +
+    mermaidBtn('one', MERMAID_ICONS.one, I18n.t('mermaid.actual')) +
+    '<span class="mermaid-sep"></span>' +
+    mermaidBtn('full', MERMAID_ICONS.full, I18n.t('mermaid.fullscreen')) +
+    mermaidBtn('dl', MERMAID_ICONS.dl, I18n.t('mermaid.download')) +
+    mermaidBtn('copy', MERMAID_ICONS.copy, I18n.t('mermaid.copySource')) +
+    `<span class="mermaid-hint">${I18n.t('mermaid.panHint')}</span>`;
+  el.insertBefore(bar, canvas);
+
+  const zoomVal = bar.querySelector('.mermaid-zoom-val');
+  const CW = () => canvas.clientWidth || w;
+  const CH = () => canvas.clientHeight || h;
+  let pz = null;
+
+  const syncLabel = () => { if (zoomVal) zoomVal.textContent = Math.round(pz.getScale() * 100) + '%'; };
+
+  // Panzoom 对 <svg> 根元素使用 50% 50% 的 transform-origin（它只在
+  // nodeName !== 'svg' 的内层元素上才用 0 0），因此「视觉位置 ≠ translate 值」：
+  //   visual = (1 - s) * size / 2 + s * pan
+  // 居中与边界必须在视觉坐标里算，再换算回 pan，否则图会偏离中心，
+  // 边界判断也会错位。
+  const panToVis = (pan, size, s) => (1 - s) * size / 2 + s * pan;
+  const visToPan = (vis, size, s) => (vis - (1 - s) * size / 2) / s;
+  const centerPan = (size, canvasSize, s) => visToPan((canvasSize - size * s) / 2, size, s);
+
+  // 只保证「图形不会完全跑出画布」，不做严格包含。
+  // 严格包含（必须整图留在画布内）会让拖拽在某些尺寸下彻底失效：
+  // 图宽恰好等于画布宽（默认的按宽度适配就是这个状态）时横向区间退化成
+  // [0,0]，「适应窗口」后纵向同理，于是表现为“图点不动”。
+  const KEEP_VISIBLE_RATIO = 0.25;   // 至少保留画布 25% 的可视区域
+  const clampAxis = (pan, size, canvasSize, s) => {
+    const drawn = size * s;
+    const keep = Math.min(drawn, Math.max(canvasSize * KEEP_VISIBLE_RATIO, 48));
+    const lo = visToPan(keep - drawn, size, s);
+    const hi = visToPan(canvasSize - keep, size, s);
+    return Math.min(Math.max(pan, lo), hi);
+  };
+
+  const clamp = () => {
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;              // 尚未完成布局，不做限制
+    const s = pz.getScale();
+    const p = pz.getPan();
+    const nx = clampAxis(p.x, w, cw, s);
+    const ny = clampAxis(p.y, h, ch, s);
+    if (Math.abs(nx - p.x) > 0.5 || Math.abs(ny - p.y) > 0.5) {
+      pz.pan(nx, ny, { force: true, silent: true, animate: false });
+    }
+  };
+
+  const setView = (scale, cx, cy) => {
+    pz.zoom(scale, { animate: false, force: true });
+    pz.pan(cx, cy, { animate: false, force: true });
+    syncLabel();
+  };
+
+  // 上方/下方还有内容没显示时给出渐隐提示，暗示可以拖拽查看
+  const updateClipHint = () => {
+    const ch = canvas.clientHeight;
+    if (!ch) return;
+    const s = pz.getScale();
+    const drawnH = h * s;
+    const top = panToVis(pz.getPan().y, h, s);
+    el.classList.toggle('is-clipped', drawnH > ch + 1 && top > ch - drawnH + 1);
+    el.classList.toggle('is-clipped-top', drawnH > ch + 1 && top < -1);
+  };
+
+  // 默认视图：按宽度适配（不放大），保证节点文字清晰可读。
+  // 纵向超出时靠拖拽查看；想让整图入眼点“适应窗口”。
+  const fitWidth = () => {
+    const cw = CW(), ch = CH();
+    const s = Math.min(cw / w, 1);
+    const H = h * s;
+    setView(s, centerPan(w, cw, s), H <= ch ? centerPan(h, ch, s) : visToPan(0, h, s));
+  };
+
+  // 适应窗口：完整显示整张图（不放大超过 100%）
+  const fit = () => {
+    const cw = CW(), ch = CH();
+    const s = Math.min(cw / w, ch / h, 1);
+    setView(s, centerPan(w, cw, s), centerPan(h, ch, s));
+  };
+
+  // 1:1 原始尺寸，居中
+  const actualSize = () => {
+    const cw = CW(), ch = CH();
+    setView(1, centerPan(w, cw, 1), centerPan(h, ch, 1));
+  };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement === el) document.exitFullscreen();
+    else if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  };
+
+  const downloadSvg = () => {
+    const clone = svg.cloneNode(true);
+    clone.removeAttribute('style');
+    clone.setAttribute('width', String(w));
+    clone.setAttribute('height', String(h));
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const data = new XMLSerializer().serializeToString(clone);
+    const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + data],
+      { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const base = (state.currentPath || 'diagram').split('/').pop().replace(/\.md$/i, '');
+    a.href = url;
+    a.download = base + '-diagram.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const copySource = async btn => {
+    try {
+      await navigator.clipboard.writeText(el.dataset.mermaidSrc || '');
+      const old = btn.title;
+      btn.classList.add('ok');
+      btn.title = I18n.t('copy.copied');
+      setTimeout(() => { btn.classList.remove('ok'); btn.title = old; }, 1500);
+    } catch (_) {}
+  };
+
+  // ── Panzoom ──
+  pz = (typeof Panzoom === 'function')
+    ? Panzoom(svg, {
+        canvas,               // 画布内任意位置都可拖拽
+        maxScale: 8,
+        minScale: 0.1,
+        step: 0.3,
+        cursor: 'grab',
+      })
+    : null;
+
+  if (!pz) {                       // 极端情况下退化：只显示，不缩放
+    bar.querySelectorAll('[data-act="out"],[data-act="in"],[data-act="fit"],[data-act="one"],[data-act="full"]')
+      .forEach(b => { b.disabled = true; });
+    return;
+  }
+
+  el._panzoom = pz;
+  el._mermaidFit = fit;
+  el._mermaidFitWidth = fitWidth;
+  svg.addEventListener('panzoomchange', () => { clamp(); syncLabel(); updateClipHint(); });
+  // 拖拽时给出明确的抓手光标反馈
+  svg.addEventListener('panzoomstart', () => el.classList.add('is-panning'));
+  svg.addEventListener('panzoomend', () => el.classList.remove('is-panning'));
+  bindMermaidFullscreen();
+
+  // 普通滚轮保持翻页，Ctrl/⌘ + 滚轮缩放（与常见画布工具一致）
+  canvas.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    pz.zoomWithWheel(e);
+    syncLabel();
+  }, { passive: false });
+
+  bar.addEventListener('click', e => {
+    const btn = e.target.closest('.mermaid-btn');
+    if (!btn || btn.disabled) return;
+    e.stopPropagation();           // 不要让点击冒泡到块编辑
+    switch (btn.dataset.act) {
+      case 'in':   pz.zoomIn({ animate: false }); syncLabel(); updateClipHint(); break;
+      case 'out':  pz.zoomOut({ animate: false }); syncLabel(); updateClipHint(); break;
+      case 'fit':  fit(); break;
+      case 'one':  actualSize(); break;
+      case 'full': toggleFullscreen(); break;
+      case 'dl':   downloadSvg(); break;
+      case 'copy': copySource(btn); break;
+    }
+  });
+  bar.addEventListener('pointerdown', e => e.stopPropagation());
+
+  // 拖拽结束的那次 click 不应该被当成“点击块”而进入行内编辑
+  let downX = 0, downY = 0;
+  canvas.addEventListener('pointerdown', e => { downX = e.clientX; downY = e.clientY; });
+  canvas.addEventListener('click', e => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true);
+
+  // 初始按宽度适配。必须等布局完成——此刻 canvas.clientWidth 可能还是 0，
+  // 会导致居中计算拿到错误的画布宽度。
+  requestAnimationFrame(() => {
+    fitWidth();
+    updateClipHint();
+  });
+}
+
+// 进入/退出全屏后画布尺寸变了，需要重新计算视图
+let mermaidFsBound = false;
+function bindMermaidFullscreen() {
+  if (mermaidFsBound) return;
+  mermaidFsBound = true;
+  document.addEventListener('fullscreenchange', () => {
+    const fig = document.fullscreenElement;
+    if (fig && fig.classList && fig.classList.contains('mermaid-figure') && fig._mermaidFit) {
+      fig.dataset.wasFullscreen = '1';
+      requestAnimationFrame(() => fig._mermaidFit());
+      return;
+    }
+    // 退出全屏：恢复到“按宽度适配”的默认视图
+    const prev = document.querySelector('.mermaid-figure[data-was-fullscreen="1"]');
+    if (prev) {
+      delete prev.dataset.wasFullscreen;
+      if (prev._mermaidFitWidth) requestAnimationFrame(() => prev._mermaidFitWidth());
+    }
+  });
+}
+
+// 主题 / 语言切换后按新主题重渲染所有示意图（mermaid 把配色烘进 SVG，
+// 不重渲染会出现深色底配浅色图的错配）
+async function rerenderMermaid() {
+  if (typeof mermaid === 'undefined' || !dom.content) return;
+  const nodes = Array.from(dom.content.querySelectorAll('.mermaid[data-mermaid-src]'));
+  if (!nodes.length) return;
+  nodes.forEach(destroyMermaidFigure);
+  initMermaid();
+  await renderMermaidNodes(nodes);
+}
+
+// 切换语言时只更新工具栏文案，不必重渲染整张图
+const MERMAID_BTN_KEYS = {
+  out: 'mermaid.zoomOut', in: 'mermaid.zoomIn', fit: 'mermaid.fit',
+  one: 'mermaid.actual', full: 'mermaid.fullscreen', dl: 'mermaid.download',
+  copy: 'mermaid.copySource',
+};
+
+function retitleMermaidToolbars() {
+  if (!dom.content) return;
+  dom.content.querySelectorAll('.mermaid-figure').forEach(fig => {
+    fig.querySelectorAll('.mermaid-btn').forEach(btn => {
+      const key = MERMAID_BTN_KEYS[btn.dataset.act];
+      if (!key) return;
+      const text = I18n.t(key);
+      btn.title = text;
+      btn.setAttribute('aria-label', text);
+    });
+    const hint = fig.querySelector('.mermaid-hint');
+    if (hint) hint.textContent = I18n.t('mermaid.panHint');
+    const zv = fig.querySelector('.mermaid-zoom-val');
+    if (zv) zv.title = I18n.t('mermaid.zoomHint');
   });
 }
 
@@ -394,6 +924,8 @@ function toggleTheme() {
   state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
   applyTheme(state.settings.theme);
   saveSettings();
+  // mermaid 把配色烘进 SVG，切换主题后必须重渲染，否则深色底配浅色图
+  rerenderMermaid();
 }
 
 function toggleSidebar() {
@@ -1070,10 +1602,10 @@ function renderDocument(path, name, text, preserveScroll = false) {
   if (typeof mermaid !== 'undefined') {
     // Defer to avoid blocking the main render
     requestAnimationFrame(() => {
-      try {
-        prepareMermaidNodes();
-        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
-      } catch (_) { /* silently ignore render errors */ }
+      // mermaid.run 内部会跳过已渲染（data-processed）的元素，
+      // 这里显式过滤以保证不会重复处理。
+      renderMermaidNodes(document.querySelectorAll('.mermaid:not([data-processed])'))
+        .catch(() => { /* 渲染失败已降级为错误提示卡片 */ });
     });
   }
 
@@ -1821,7 +2353,13 @@ function activateBlockEdit(bi, el) {
 
   textarea.addEventListener('keydown', e => {
     if (e.key === 'Escape') { e.preventDefault(); commitBlockEdit(); }
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveInlineEdits(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault();
+      // 阻止冒泡到 document 的全局快捷键，避免 saveInlineEdits 被触发两次
+      // （两路同时写入同一文件会报"保存失败"，甚至产生竞态）。
+      e.stopPropagation();
+      saveInlineEdits();
+    }
   });
 
   textarea.addEventListener('blur', () => {
@@ -1882,15 +2420,16 @@ function commitBlockEdit() {
 
   const frag = document.createDocumentFragment();
   while (tempDiv.firstChild) frag.appendChild(tempDiv.firstChild);
+  // 在 replaceWith 之前捕获新插入的示意图（frag 会被整体移入文档）
+  const newMermaid = frag.querySelectorAll('.mermaid');
   wrap.replaceWith(frag);
 
-  // Re-render any mermaid diagrams in the replacement
-  if (typeof mermaid !== 'undefined') {
+  // Re-render only the newly inserted mermaid diagrams. 绝不能对文档里
+  // 所有 .mermaid 重新处理 —— 其它已渲染的示意图内容已是 <svg>，
+  // prepareMermaidNodes 会把它们的 CSS/文字当成源代码破坏掉（乱码）。
+  if (typeof mermaid !== 'undefined' && newMermaid.length) {
     requestAnimationFrame(() => {
-      try {
-        prepareMermaidNodes();
-        mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
-      } catch (_) {}
+      renderMermaidNodes(newMermaid).catch(() => {});
     });
   }
 }
@@ -2218,6 +2757,7 @@ function bindEvents() {
   document.addEventListener('i18n-changed', () => {
     updateLiveIndicator();
     applyTheme(state.settings.theme);
+    retitleMermaidToolbars();
     if (!dom.welcome.classList.contains('visible')) {
       renderTOC([]); // force empty TOC re-translate
     }
